@@ -27,23 +27,24 @@ export const authService = {
       passwordHash,
       passwordSalt: "",
       createdAt: new Date(),
+      avatarUrl: `https://api.dicebear.com/7.x/personas/svg?seed=${login}`,
       emailConfirmation: {
         confirmationCode: uuidv4(),
         expirationDate: add(new Date(), {
-          hours: 1,
+          hours: 10,
           minutes: 3,
         }),
-        isConfirmed: false,
+        isConfirmed: true,
       },
     };
 
     const createResult = await userRepository.createUser(newUser);
-    try {
-      await emailManager.sendEmailConfirmationMessage(newUser);
-    } catch (error) {
-      console.error(error);
-      return null;
-    }
+    // try {
+    //   await emailManager.sendEmailConfirmationMessage(newUser);
+    // } catch (error) {
+    //   console.error(error);
+    //   return null;
+    // }
     return createResult;
   },
 

@@ -1,0 +1,936 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mint Chat</title>
+    <script
+      src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"
+      type="module"
+    ></script>
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- HEADER -->
+      <div class="chat-header">
+        <div class="header-avatar" id="headerAvatar">💬</div>
+        <div class="header-info">
+          <h1 id="chatTitle">Mint Chat</h1>
+          <div class="header-status" id="headerStatus">Не подключено</div>
+        </div>
+        <div class="header-actions">
+          <button
+            class="header-btn"
+            id="backBtn"
+            onclick="switchToGeneral()"
+            title="Общий чат"
+            style="display: none"
+          >
+            ←
+          </button>
+          <button
+            class="header-btn"
+            id="directsBtn"
+            onclick="toggleSidebar()"
+            title="Личные чаты"
+          >
+            💬
+          </button>
+          <button class="header-btn" onclick="logout()" title="Выйти">
+            🚪
+          </button>
+        </div>
+      </div>
+
+      <!-- SIDEBAR с личными чатами -->
+      <div class="sidebar" id="directSidebar" style="display: none">
+        <div class="sidebar-header">
+          <h3>💬 Личные чаты</h3>
+          <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+        </div>
+        <div id="directChatsList" class="direct-chats-list">
+          <div class="empty-chats">Нет личных чатов</div>
+        </div>
+      </div>
+
+      <!-- Overlay для sidebar -->
+      <div
+        class="sidebar-overlay"
+        id="sidebarOverlay"
+        onclick="closeSidebar()"
+        style="display: none"
+      ></div>
+
+      <!-- AUTH -->
+      <div class="auth-wrapper" id="authWrapper">
+        <div class="auth-section" id="authSection">
+          <div class="connect-section">
+            <h3>📝 Регистрация</h3>
+            <div id="regNotification" class="notification"></div>
+            <input type="text" id="regLogin" placeholder="Логин" />
+            <input type="email" id="regEmail" placeholder="Email" />
+            <input type="password" id="regPassword" placeholder="Пароль" />
+            <button onclick="register()">Зарегистрироваться</button>
+          </div>
+          <div class="connect-section">
+            <h3>🔑 Вход</h3>
+            <div id="loginNotification" class="notification"></div>
+            <input type="text" id="loginInput" placeholder="Логин или Email" />
+            <input type="password" id="loginPassword" placeholder="Пароль" />
+            <button onclick="login()">Войти</button>
+          </div>
+          <div class="connect-section">
+            <div id="status" class="disconnected">⚠️ Не подключено</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AVATAR PICKER -->
+      <div class="auth-wrapper" id="avatarWrapper" style="display: none">
+        <div class="connect-section avatar-picker-section">
+          <h3>🎨 Выбери аватар</h3>
+          <p class="avatar-subtitle">Выбери своего персонажа</p>
+          <div class="avatar-grid" id="avatarGrid"></div>
+          <div id="avatarNotification" class="notification"></div>
+          <button onclick="confirmAvatar()" id="confirmAvatarBtn" disabled>
+            ✅ Выбрать и войти
+          </button>
+        </div>
+      </div>
+
+      <!-- MESSAGES -->
+      <div id="messages" style="display: none">
+        <div class="empty-state">📭 Нет сообщений. Начни общение!</div>
+      </div>
+
+      <!-- TYPING INDICATOR -->
+      <div class="typing-indicator" id="typingIndicator" style="display: none">
+        <span id="typingText"></span> печатает
+        <span class="typing-dots">
+          <span>.</span><span>.</span><span>.</span>
+        </span>
+      </div>
+
+      <!-- INPUT -->
+      <div class="input-container" id="inputContainer" style="display: none">
+        <emoji-picker
+          id="emojiPicker"
+          style="display: none; position: absolute; bottom: 70px; right: 10px"
+        ></emoji-picker>
+        <input
+          type="file"
+          id="fileInput"
+          accept="image/*,video/*,audio/*"
+          style="display: none"
+          onchange="handleFileUpload(event)"
+        />
+        <button onclick="toggleEmoji()" class="emoji-btn">😊</button>
+        <button
+          onclick="document.getElementById('fileInput').click()"
+          class="attach-btn"
+        >
+          📎
+        </button>
+        <input
+          type="text"
+          id="messageInput"
+          placeholder="Написать сообщение..."
+          disabled
+        />
+        <button onclick="sendMessage()" disabled id="sendBtn" class="send-btn">
+          ➤
+        </button>
+        <button onclick="clearChat()" class="clear-btn" id="clearBtn">
+          🗑️
+        </button>
+      </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+      let socket;
+      let myName = "";
+      let myUserId = "";
+      let selectedAvatar = "";
+      let pendingLogin = null;
+      let currentMode = "general";
+      let currentDirectChat = null;
+      let typingTimeout = null;
+
+      const messagesDiv = document.getElementById("messages");
+      const messageInput = document.getElementById("messageInput");
+      const sendBtn = document.getElementById("sendBtn");
+      const statusDiv = document.getElementById("status");
+      const authSection = document.getElementById("authSection");
+      const authWrapper = document.getElementById("authWrapper");
+      const avatarWrapper = document.getElementById("avatarWrapper");
+      const headerStatus = document.getElementById("headerStatus");
+      const inputContainer = document.getElementById("inputContainer");
+      const headerAvatar = document.getElementById("headerAvatar");
+      const chatTitle = document.getElementById("chatTitle");
+      const typingIndicator = document.getElementById("typingIndicator");
+
+      const AVATAR_SEEDS = [
+        "Lily",
+        "Emma",
+        "Sofia",
+        "Kate",
+        "Zara",
+        "Nina",
+        "Alex",
+        "James",
+        "Leo",
+        "Tom",
+        "Marcus",
+        "Andre",
+      ];
+
+      const wavePlayers = {};
+
+      function generateAvatarUrl(seed) {
+        return `https://api.dicebear.com/7.x/lorelei/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+      }
+
+      function buildAvatarGrid() {
+        const grid = document.getElementById("avatarGrid");
+        grid.innerHTML = "";
+        AVATAR_SEEDS.forEach((seed) => {
+          const div = document.createElement("div");
+          div.className = "avatar-item";
+          div.innerHTML = `<img src="${generateAvatarUrl(seed)}" alt="${seed}" />`;
+          div.onclick = () => selectAvatar(seed, div);
+          grid.appendChild(div);
+        });
+      }
+
+      function selectAvatar(seed, el) {
+        document
+          .querySelectorAll(".avatar-item")
+          .forEach((i) => i.classList.remove("selected"));
+        el.classList.add("selected");
+        selectedAvatar = generateAvatarUrl(seed);
+        document.getElementById("confirmAvatarBtn").disabled = false;
+      }
+
+      async function confirmAvatar() {
+        if (!selectedAvatar || !pendingLogin) return;
+        localStorage.setItem("userAvatar", selectedAvatar);
+        updateHeaderAvatar(selectedAvatar);
+        avatarWrapper.style.display = "none";
+        myName = pendingLogin;
+        connect();
+      }
+
+      function updateHeaderAvatar(avatarUrl) {
+        if (avatarUrl) {
+          headerAvatar.innerHTML = `<img src="${avatarUrl}" alt="avatar" class="header-avatar-img" />`;
+        } else {
+          headerAvatar.innerHTML = "💬";
+        }
+      }
+
+      function togglePlay(wavId) {
+        const ws = wavePlayers[wavId];
+        if (!ws) return;
+        ws.playPause();
+        const btn = document.getElementById(`play_${wavId}`);
+        if (btn) btn.textContent = ws.isPlaying() ? "⏸" : "▶";
+      }
+
+      function toggleMute(wavId) {
+        const ws = wavePlayers[wavId];
+        if (!ws) return;
+        const muted = ws.getMuted ? ws.getMuted() : false;
+        ws.setMuted(!muted);
+        const btn = document.getElementById(`vol_${wavId}`);
+        if (btn) btn.textContent = !muted ? "🔇" : "🔊";
+      }
+
+      function setVolume(wavId, val) {
+        const ws = wavePlayers[wavId];
+        if (!ws) return;
+        ws.setVolume(parseFloat(val));
+        const btn = document.getElementById(`vol_${wavId}`);
+        if (btn) btn.textContent = parseFloat(val) === 0 ? "🔇" : "🔊";
+      }
+
+      function initWaveSurfer(wavId, url, isMine) {
+        setTimeout(() => {
+          const container = document.getElementById(wavId);
+          if (!container) return;
+
+          const ws = WaveSurfer.create({
+            container: `#${wavId}`,
+            waveColor: isMine
+              ? "rgba(255,255,255,0.35)"
+              : "rgba(58,90,117,0.5)",
+            progressColor: isMine
+              ? "rgba(255,255,255,0.9)"
+              : "rgba(102,153,187,0.9)",
+            height: 44,
+            barWidth: 2,
+            barGap: 1,
+            barRadius: 2,
+            url: url,
+            interact: true,
+          });
+
+          ws.on("timeupdate", (t) => {
+            const el = document.getElementById(`time_${wavId}`);
+            if (el) {
+              const dur = ws.getDuration();
+              const fmt = (s) => new Date(s * 1000).toISOString().slice(14, 19);
+              el.textContent = `${fmt(t)} / ${fmt(dur || 0)}`;
+            }
+          });
+
+          ws.on("finish", () => {
+            const btn = document.getElementById(`play_${wavId}`);
+            if (btn) btn.textContent = "▶";
+          });
+
+          wavePlayers[wavId] = ws;
+        }, 150);
+      }
+
+      window.onload = () => {
+        const t = localStorage.getItem("token");
+        const name = localStorage.getItem("userName");
+        const avatar = localStorage.getItem("userAvatar");
+        if (t && name) {
+          myName = name;
+          authWrapper.style.display = "none";
+          if (avatar) updateHeaderAvatar(avatar);
+          connect();
+        }
+
+        const picker = document.getElementById("emojiPicker");
+        picker.addEventListener("emoji-click", (e) => {
+          messageInput.value += e.detail.unicode;
+          picker.style.display = "none";
+          messageInput.focus();
+        });
+
+        document.addEventListener("click", (e) => {
+          const picker = document.getElementById("emojiPicker");
+          const emojiBtn = document.querySelector(".emoji-btn");
+          if (!picker.contains(e.target) && e.target !== emojiBtn) {
+            picker.style.display = "none";
+          }
+        });
+      };
+
+      function toggleEmoji() {
+        const picker = document.getElementById("emojiPicker");
+        picker.style.display =
+          picker.style.display === "none" ? "block" : "none";
+      }
+
+      async function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        messageInput.value = `📎 ${file.name}`;
+        messageInput.disabled = true;
+        sendBtn.disabled = true;
+        sendBtn.textContent = "⏳";
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+          const r = await fetch("/upload/file", {
+            method: "POST",
+            body: formData,
+          });
+          if (!r.ok) throw new Error("Upload failed");
+          const data = await r.json();
+
+          if (currentMode === "general") {
+            socket.emit("send_message", {
+              message: "",
+              fileUrl: data.url,
+              fileType: data.fileType,
+              fileName: data.fileName,
+              avatarUrl: localStorage.getItem("userAvatar") || "",
+            });
+          } else if (currentMode === "direct" && currentDirectChat) {
+            socket.emit("send_direct", {
+              toUserId: currentDirectChat.userId,
+              toUserName: currentDirectChat.userName,
+              message: "",
+              fileUrl: data.url,
+              fileType: data.fileType,
+              fileName: data.fileName,
+              avatarUrl: localStorage.getItem("userAvatar") || "",
+            });
+          }
+          messageInput.value = "";
+        } catch (error) {
+          showNotification(
+            "loginNotification",
+            "❌ Ошибка загрузки файла",
+            "error",
+          );
+          messageInput.value = "";
+        } finally {
+          messageInput.disabled = false;
+          sendBtn.disabled = false;
+          sendBtn.textContent = "➤";
+          document.getElementById("fileInput").value = "";
+        }
+      }
+
+      function showNotification(id, msg, type) {
+        const n = document.getElementById(id);
+        n.textContent = msg;
+        n.className = `notification ${type} show`;
+        setTimeout(() => n.classList.remove("show"), 4000);
+      }
+
+      async function register() {
+        const login = regLogin.value.trim();
+        const email = regEmail.value.trim();
+        const password = regPassword.value;
+        if (!login || !email || !password) {
+          return showNotification(
+            "regNotification",
+            "⚠️ Заполни все поля",
+            "error",
+          );
+        }
+        const r = await fetch("/auth/registration", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ login, email, password }),
+        });
+        if (r.ok) {
+          showNotification(
+            "regNotification",
+            "✅ Регистрация успешна! Войди.",
+            "success",
+          );
+          regLogin.value = "";
+          regEmail.value = "";
+          regPassword.value = "";
+        } else {
+          showNotification("regNotification", "❌ Ошибка регистрации", "error");
+        }
+      }
+
+      async function login() {
+        const loginOrEmail = loginInput.value.trim();
+        const password = loginPassword.value;
+        if (!loginOrEmail || !password) {
+          return showNotification(
+            "loginNotification",
+            "⚠️ Заполни все поля",
+            "error",
+          );
+        }
+        const r = await fetch("/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ loginOrEmail, password }),
+        });
+        if (r.ok) {
+          const d = await r.json();
+          localStorage.setItem("token", d.token);
+          localStorage.setItem("userName", loginOrEmail);
+          showNotification("loginNotification", "✅ Вход выполнен!", "success");
+          const existingAvatar = localStorage.getItem("userAvatar");
+          if (existingAvatar) {
+            myName = loginOrEmail;
+            updateHeaderAvatar(existingAvatar);
+            authSection.classList.add("hide");
+            setTimeout(() => {
+              authWrapper.style.display = "none";
+              connect();
+            }, 400);
+          } else {
+            pendingLogin = loginOrEmail;
+            authSection.classList.add("hide");
+            setTimeout(() => {
+              authWrapper.style.display = "none";
+              avatarWrapper.style.display = "flex";
+              buildAvatarGrid();
+            }, 400);
+          }
+        } else {
+          showNotification(
+            "loginNotification",
+            "❌ Неверный логин или пароль",
+            "error",
+          );
+        }
+      }
+
+      function logout() {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userName");
+        localStorage.removeItem("userAvatar");
+        if (socket) socket.disconnect();
+        messagesDiv.style.display = "none";
+        inputContainer.style.display = "none";
+        avatarWrapper.style.display = "none";
+        authWrapper.style.display = "flex";
+        authSection.classList.remove("hide");
+        statusDiv.textContent = "⚠️ Не подключено";
+        statusDiv.className = "disconnected";
+        headerStatus.textContent = "Не подключено";
+        headerAvatar.innerHTML = "💬";
+        messageInput.disabled = true;
+        sendBtn.disabled = true;
+        messagesDiv.innerHTML =
+          '<div class="empty-state">📭 Нет сообщений. Начни общение!</div>';
+        currentMode = "general";
+        currentDirectChat = null;
+        chatTitle.textContent = "Mint Chat";
+        document.getElementById("backBtn").style.display = "none";
+        document.getElementById("directsBtn").style.display = "flex";
+        typingIndicator.style.display = "none";
+      }
+
+      function connect() {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          statusDiv.textContent = "⚠️ Войди в систему";
+          statusDiv.className = "disconnected";
+          return;
+        }
+        socket = io({ auth: { token } });
+
+        socket.on("connect", () => {
+          statusDiv.textContent = "✅ Подключено";
+          statusDiv.className = "connected";
+          headerStatus.textContent = "онлайн";
+          messageInput.disabled = false;
+          sendBtn.disabled = false;
+          messagesDiv.style.display = "flex";
+          inputContainer.style.display = "flex";
+
+          try {
+            const payload = JSON.parse(atob(token.split(".")[1]));
+            myUserId = payload.userId;
+          } catch (e) {
+            console.error("Failed to parse token:", e);
+          }
+
+          loadDirectChats();
+        });
+
+        socket.on("disconnect", () => {
+          statusDiv.textContent = "❌ Отключено";
+          statusDiv.className = "disconnected";
+          headerStatus.textContent = "офлайн";
+          messageInput.disabled = true;
+          sendBtn.disabled = true;
+        });
+
+        socket.on("message_history", (m) => {
+          if (currentMode !== "general") return;
+          messagesDiv.innerHTML = "";
+          if (m.length === 0) {
+            messagesDiv.innerHTML =
+              '<div class="empty-state">📭 Нет сообщений. Начни общение!</div>';
+          } else {
+            m.forEach((msg) => addMessage(msg, msg.userId));
+          }
+        });
+
+        socket.on("new_message", (msg) => {
+          if (currentMode === "general") addMessage(msg, msg.userId);
+        });
+
+        socket.on("direct_history", ({ messages }) => {
+          messagesDiv.innerHTML = "";
+          if (messages.length === 0) {
+            messagesDiv.innerHTML =
+              '<div class="empty-state">📭 Нет сообщений. Начни общение!</div>';
+          } else {
+            messages.forEach(addDirectMessage);
+          }
+
+          if (currentDirectChat) {
+            socket.emit("mark_read", { toUserId: currentDirectChat.userId });
+          }
+        });
+
+        socket.on("new_direct_message", (msg) => {
+          if (currentMode === "direct") {
+            addDirectMessage(msg);
+            if (currentDirectChat && msg.fromUserId.toString() !== myUserId) {
+              socket.emit("mark_read", { toUserId: currentDirectChat.userId });
+            }
+          }
+          loadDirectChats();
+        });
+
+        socket.on("direct_chats", (chats) => {
+          renderDirectChatsList(chats);
+        });
+
+        socket.on("direct_cleared", () => {
+          messagesDiv.innerHTML =
+            '<div class="empty-state">🧹 История очищена</div>';
+        });
+
+        socket.on("user_typing", (data) => {
+          if (currentMode === "direct") {
+            document.getElementById("typingText").textContent = data.userName;
+            typingIndicator.style.display = "flex";
+          }
+        });
+
+        socket.on("user_stop_typing", () => {
+          typingIndicator.style.display = "none";
+        });
+
+        socket.on("messages_read", () => {
+          document.querySelectorAll(".read-status").forEach((el) => {
+            el.textContent = "✓✓";
+            el.classList.add("read");
+          });
+          loadDirectChats();
+        });
+      }
+
+      // Обработчик ввода для "печатает..."
+      messageInput.addEventListener("input", () => {
+        if (currentMode === "direct" && currentDirectChat) {
+          socket.emit("typing_direct", { toUserId: currentDirectChat.userId });
+
+          clearTimeout(typingTimeout);
+          typingTimeout = setTimeout(() => {
+            socket.emit("stop_typing_direct", {
+              toUserId: currentDirectChat.userId,
+            });
+          }, 1500);
+        }
+      });
+
+      // Остановить "печатает" при потере фокуса
+      messageInput.addEventListener("blur", () => {
+        if (currentMode === "direct" && currentDirectChat && typingTimeout) {
+          clearTimeout(typingTimeout);
+          socket.emit("stop_typing_direct", {
+            toUserId: currentDirectChat.userId,
+          });
+        }
+      });
+
+      function addMessage(msg, userId) {
+        const emptyState = messagesDiv.querySelector(".empty-state");
+        if (emptyState) emptyState.remove();
+
+        const isMine = msg.userName === myName;
+        const div = document.createElement("div");
+        div.className = "message " + (isMine ? "mine" : "theirs");
+
+        const time = new Date(msg.createdAt).toLocaleTimeString("ru-RU", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        const avatarUrl = msg.avatarUrl || generateAvatarUrl(msg.userName);
+        const userIdStr = userId ? userId.toString() : "";
+
+        let fileContent = "";
+        if (msg.fileUrl) {
+          const isAudio =
+            msg.fileType === "audio" ||
+            msg.fileUrl.match(/\.(mp3|wav|ogg|aac|m4a)$/i);
+          const isVideo = msg.fileType === "video" && !isAudio;
+
+          if (msg.fileType === "image") {
+            fileContent = `<img src="${msg.fileUrl}" class="msg-image" onclick="window.open('${msg.fileUrl}', '_blank')">`;
+          } else if (isVideo) {
+            fileContent = `<video controls class="msg-video"><source src="${msg.fileUrl}"></video>`;
+          } else if (isAudio) {
+            const wavId = `wave_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+            const rawName = msg.fileName || "";
+            const cleanName = rawName.substring(0, 30);
+
+            fileContent = `
+              <div class="audio-card">
+                <div class="audio-cover-placeholder">🎵</div>
+                <div class="audio-bottom">
+                  <div class="audio-filename">${cleanName}</div>
+                  <div class="audio-row">
+                    <button class="play-btn" id="play_${wavId}" onclick="togglePlay('${wavId}')">▶</button>
+                    <div id="${wavId}" class="waveform"></div>
+                  </div>
+                  <div class="audio-footer">
+                    <span class="audio-time" id="time_${wavId}">0:00 / 0:00</span>
+                    <div class="volume-row">
+                      <button class="volume-btn" onclick="toggleMute('${wavId}')" id="vol_${wavId}">🔊</button>
+                      <input type="range" class="volume-slider" min="0" max="1" step="0.05" value="1"
+                        oninput="setVolume('${wavId}', this.value)" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+            setTimeout(() => initWaveSurfer(wavId, msg.fileUrl, isMine), 200);
+          } else {
+            fileContent = `<a href="${msg.fileUrl}" target="_blank" class="msg-file">📎 ${msg.fileName}</a>`;
+          }
+        }
+
+        const avatarClick = isMine
+          ? ""
+          : `onclick="showUserMenu('${userIdStr}', '${msg.userName}', '${avatarUrl}')"`;
+
+        div.innerHTML = `
+          <img src="${avatarUrl}" class="msg-avatar" alt="${msg.userName}" ${avatarClick} style="${isMine ? "" : "cursor: pointer;"}" />
+          <div class="message-content">
+            ${!isMine ? `<div class="message-meta"><span class="message-name">${msg.userName}</span></div>` : ""}
+            <div class="message-bubble">
+              ${msg.message ? `<div class="message-text">${msg.message}</div>` : ""}
+              ${fileContent}
+            </div>
+            <div class="message-time">${time}</div>
+          </div>
+        `;
+
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+
+      function addDirectMessage(msg) {
+        const emptyState = messagesDiv.querySelector(".empty-state");
+        if (emptyState) emptyState.remove();
+
+        const isMine = msg.fromUserName === myName;
+        const div = document.createElement("div");
+        div.className = "message " + (isMine ? "mine" : "theirs");
+
+        const time = new Date(msg.createdAt).toLocaleTimeString("ru-RU", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        const avatarUrl = msg.fromAvatarUrl;
+        const userName = msg.fromUserName;
+        const readStatus = isMine ? (msg.isRead ? "✓✓" : "✓") : "";
+
+        let fileContent = "";
+        if (msg.fileUrl) {
+          const isAudio =
+            msg.fileType === "audio" ||
+            msg.fileUrl.match(/\.(mp3|wav|ogg|aac|m4a)$/i);
+          const isVideo = msg.fileType === "video" && !isAudio;
+
+          if (msg.fileType === "image") {
+            fileContent = `<img src="${msg.fileUrl}" class="msg-image" onclick="window.open('${msg.fileUrl}', '_blank')">`;
+          } else if (isVideo) {
+            fileContent = `<video controls class="msg-video"><source src="${msg.fileUrl}"></video>`;
+          } else if (isAudio) {
+            const wavId = `wave_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+            const rawName = msg.fileName || "";
+            const cleanName = rawName.substring(0, 30);
+
+            fileContent = `
+              <div class="audio-card">
+                <div class="audio-cover-placeholder">🎵</div>
+                <div class="audio-bottom">
+                  <div class="audio-filename">${cleanName}</div>
+                  <div class="audio-row">
+                    <button class="play-btn" id="play_${wavId}" onclick="togglePlay('${wavId}')">▶</button>
+                    <div id="${wavId}" class="waveform"></div>
+                  </div>
+                  <div class="audio-footer">
+                    <span class="audio-time" id="time_${wavId}">0:00 / 0:00</span>
+                    <div class="volume-row">
+                      <button class="volume-btn" onclick="toggleMute('${wavId}')" id="vol_${wavId}">🔊</button>
+                      <input type="range" class="volume-slider" min="0" max="1" step="0.05" value="1"
+                        oninput="setVolume('${wavId}', this.value)" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+            setTimeout(() => initWaveSurfer(wavId, msg.fileUrl, isMine), 200);
+          } else {
+            fileContent = `<a href="${msg.fileUrl}" target="_blank" class="msg-file">📎 ${msg.fileName}</a>`;
+          }
+        }
+
+        div.innerHTML = `
+          <img src="${avatarUrl}" class="msg-avatar" alt="${userName}" />
+          <div class="message-content">
+            ${!isMine ? `<div class="message-meta"><span class="message-name">${userName}</span></div>` : ""}
+            <div class="message-bubble">
+              ${msg.message ? `<div class="message-text">${msg.message}</div>` : ""}
+              ${fileContent}
+            </div>
+            <div class="message-footer">
+              <span class="message-time">${time}</span>
+              ${isMine ? `<span class="read-status ${msg.isRead ? "read" : ""}">${readStatus}</span>` : ""}
+            </div>
+          </div>
+        `;
+
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+
+      function sendMessage() {
+        const m = messageInput.value.trim();
+        if (!m) return;
+
+        if (currentMode === "general") {
+          socket.emit("send_message", {
+            message: m,
+            avatarUrl: localStorage.getItem("userAvatar") || "",
+          });
+        } else if (currentMode === "direct" && currentDirectChat) {
+          clearTimeout(typingTimeout);
+          socket.emit("stop_typing_direct", {
+            toUserId: currentDirectChat.userId,
+          });
+
+          socket.emit("send_direct", {
+            toUserId: currentDirectChat.userId,
+            toUserName: currentDirectChat.userName,
+            message: m,
+            avatarUrl: localStorage.getItem("userAvatar") || "",
+          });
+        }
+        messageInput.value = "";
+      }
+
+      async function clearChat() {
+        if (currentMode === "general") {
+          if (!confirm("🗑️ Удалить всю историю общего чата?")) return;
+          const r = await fetch("/chat/clear-messages", { method: "DELETE" });
+          if (r.ok) {
+            messagesDiv.innerHTML =
+              '<div class="empty-state">🧹 История очищена</div>';
+          } else {
+            showNotification("loginNotification", "❌ Ошибка очистки", "error");
+          }
+        } else if (currentMode === "direct" && currentDirectChat) {
+          if (!confirm("🗑️ Удалить историю личного чата?")) return;
+          socket.emit("clear_direct", { toUserId: currentDirectChat.userId });
+        }
+      }
+
+      function showUserMenu(userId, userName, avatarUrl) {
+        if (userName === myName) return;
+        if (confirm(`💬 Написать личное сообщение ${userName}?`)) {
+          openDirectChat(userId, userName, avatarUrl);
+        }
+      }
+
+      function openDirectChat(userId, userName, avatarUrl) {
+        currentMode = "direct";
+        currentDirectChat = { userId, userName, avatarUrl };
+        chatTitle.textContent = `💬 ${userName}`;
+        updateHeaderAvatar(avatarUrl);
+        document.getElementById("backBtn").style.display = "flex";
+        document.getElementById("directsBtn").style.display = "none";
+        typingIndicator.style.display = "none";
+        socket.emit("join_direct", { toUserId: userId });
+        closeSidebar();
+      }
+
+      function switchToGeneral() {
+        currentMode = "general";
+        currentDirectChat = null;
+        chatTitle.textContent = "Mint Chat";
+        updateHeaderAvatar(localStorage.getItem("userAvatar"));
+        document.getElementById("backBtn").style.display = "none";
+        document.getElementById("directsBtn").style.display = "flex";
+        typingIndicator.style.display = "none";
+
+        messagesDiv.innerHTML = "";
+        const token = localStorage.getItem("token");
+        if (socket && socket.connected) {
+          socket.disconnect();
+          socket = io({ auth: { token } });
+          socket.on("connect", () => {
+            connect();
+          });
+        }
+      }
+
+      function toggleSidebar() {
+        const sidebar = document.getElementById("directSidebar");
+        const overlay = document.getElementById("sidebarOverlay");
+        if (sidebar.style.display === "none") {
+          sidebar.style.display = "block";
+          overlay.style.display = "block";
+          loadDirectChats();
+        } else {
+          closeSidebar();
+        }
+      }
+
+      function closeSidebar() {
+        document.getElementById("directSidebar").style.display = "none";
+        document.getElementById("sidebarOverlay").style.display = "none";
+      }
+
+      function loadDirectChats() {
+        if (socket && socket.connected) {
+          socket.emit("get_direct_chats");
+        }
+      }
+
+      function renderDirectChatsList(chats) {
+        const list = document.getElementById("directChatsList");
+        if (!chats || chats.length === 0) {
+          list.innerHTML = '<div class="empty-chats">Нет личных чатов</div>';
+          return;
+        }
+
+        list.innerHTML = chats
+          .map((chat) => {
+            const isFromMe = chat.fromUserName === myName;
+            const otherUserId = isFromMe ? chat.toUserId : chat.fromUserId;
+            const otherUserName = isFromMe
+              ? chat.toUserName
+              : chat.fromUserName;
+            const otherUserAvatar = isFromMe
+              ? generateAvatarUrl(chat.toUserName)
+              : chat.fromAvatarUrl;
+
+            const preview = chat.message
+              ? chat.message.substring(0, 30)
+              : "📎 Медиа";
+            const time = new Date(chat.createdAt).toLocaleTimeString("ru-RU", {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+
+            const unreadBadge =
+              !isFromMe && !chat.isRead
+                ? '<span class="unread-badge">•</span>'
+                : "";
+
+            return `
+            <div class="chat-item" onclick="openDirectChat('${otherUserId}', '${otherUserName}', '${otherUserAvatar}')">
+              <img src="${otherUserAvatar}" class="chat-avatar" />
+              <div class="chat-info">
+                <div class="chat-name">${otherUserName} ${unreadBadge}</div>
+                <div class="chat-preview">${preview}</div>
+              </div>
+              <div class="chat-time">${time}</div>
+            </div>
+          `;
+          })
+          .join("");
+      }
+
+      messageInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+      });
+      loginPassword.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") login();
+      });
+      regPassword.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") register();
+      });
+    </script>
+  </body>
+</html>
