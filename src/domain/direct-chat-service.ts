@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb";
-import { directChatRepository } from "../repositories/direct-chat-repository";
+import { directChatRepository } from "../repositories/mongo/direct-chat-mongo-repository";
 import { DirectMessageDBType } from "../repositories/types";
 
 export const directChatService = {

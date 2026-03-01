@@ -1,4 +1,4 @@
-import { chatRepository } from "../repositories/chat-repository";
+import { chatRepository } from "../repositories/mongo/chat-mongo-repository";
 import { MessageDBType } from "../repositories/types";
 import { ObjectId } from "mongodb";
 

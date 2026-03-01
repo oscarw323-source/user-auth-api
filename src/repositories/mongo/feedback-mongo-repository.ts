@@ -1,5 +1,5 @@
-import { feedbackCollection } from "../db/db";
-import { FeedbackDBType } from "./types";
+import { feedbackCollection } from "../../db/mongo";
+import { FeedbackDBType } from "../types";
 
 export const feedbackRepository = {
   async createFeedback(feedback: FeedbackDBType): Promise<FeedbackDBType> {

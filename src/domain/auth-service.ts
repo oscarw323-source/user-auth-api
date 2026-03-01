@@ -1,5 +1,5 @@
-import { userRepository } from "../repositories/user-repository";
-import { usersDBType } from "../repositories/types";
+import { userRepository } from "../repositories/db-factory";
+import { usersDBType, DbId, JwtPayload } from "../repositories/types";
 import { ObjectId } from "mongodb";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -17,10 +17,10 @@ export const authService = {
     login: string,
     email: string,
     password: string,
-  ): Promise<usersDBType | null> {
+  ): Promise<usersDBType<DbId> | null> {
     const passwordHash = await this._generateHash(password);
 
-    const newUser: usersDBType = {
+    const newUser: usersDBType<ObjectId> = {
       _id: new ObjectId(),
       userName: login,
       email,
@@ -39,12 +39,6 @@ export const authService = {
     };
 
     const createResult = await userRepository.createUser(newUser);
-    // try {
-    //   await emailManager.sendEmailConfirmationMessage(newUser);
-    // } catch (error) {
-    //   console.error(error);
-    //   return null;
-    // }
     return createResult;
   },
 
@@ -68,8 +62,15 @@ export const authService = {
 
   async checkAndFindUserByToken(token: string) {
     try {
-      const decoded: any = jwt.verify(token, settings.JWT_SECRET);
-      return userService.findUserById(new ObjectId(decoded.userId));
+      const decoded = jwt.verify(token, settings.JWT_SECRET);
+      if (
+        typeof decoded === "object" &&
+        decoded !== null &&
+        "userId" in decoded
+      ) {
+        return userService.findUserById(new ObjectId(decoded.userId as string));
+      }
+      return null;
     } catch (error) {
       return null;
     }

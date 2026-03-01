@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import { userService } from "../domain/users-service";
 import { jwtService } from "../application/jwt-service";
-import { usersDBType } from "../repositories/types";
+import { usersDBType, DbId } from "../repositories/types";
 
-type AuthRequest = Request & { user?: usersDBType | null };
+type AuthRequest = Request & { user?: usersDBType<DbId> | null };
 
 export const authMidelware = async (
   req: AuthRequest,
@@ -22,6 +22,7 @@ export const authMidelware = async (
     res.status(401).send({ error: "Unauthorized" });
     return;
   }
+
   req.user = await userService.findUserById(userId);
 
   next();

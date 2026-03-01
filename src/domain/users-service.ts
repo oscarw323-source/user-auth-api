@@ -1,13 +1,12 @@
-import { userRepository } from "../repositories/user-repository";
-import { usersDBType } from "../repositories/types";
-import { ObjectId } from "mongodb";
+import { userRepository } from "../repositories/db-factory";
+import { usersDBType, DbId } from "../repositories/types";
 
 export const userService = {
-  async findUserById(id: ObjectId): Promise<usersDBType | null> {
+  async findUserById(id: DbId): Promise<usersDBType<DbId> | null> {
     return userRepository.findUserById(id);
   },
 
-  async getAllUsers(): Promise<usersDBType[]> {
+  async getAllUsers(): Promise<usersDBType<DbId>[] | usersDBType<number>[]> {
     return userRepository.getAllUsers();
   },
 };

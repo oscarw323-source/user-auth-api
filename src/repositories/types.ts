@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 
-export type usersDBType = {
-  _id: ObjectId;
+export type usersDBType<Tid = ObjectId> = {
+  _id: Tid;
   userName: string;
   email: string;
   passwordHash: string;
@@ -46,4 +46,28 @@ export type DirectMessageDBType = {
   fileName?: string;
   chatId: string;
   isRead: boolean;
+};
+
+export type UserRow = {
+  id: number;
+  user_name: string;
+  email: string;
+  password_hash: string;
+  password_salt: string;
+  created_at: Date;
+  avatar_url: string;
+  confirmation_code: string;
+  expiration_date: Date;
+  is_confirmed: boolean;
+};
+
+export type DbId = ObjectId | number;
+
+export type JwtPayload = {
+  userId: string;
+};
+
+export type RecoveryEmailType = {
+  email: string;
+  recoveryCode: string;
 };

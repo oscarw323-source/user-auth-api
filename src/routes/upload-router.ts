@@ -7,6 +7,42 @@ const upload = multer({ dest: "uploads/" });
 
 export const uploadRouter = Router();
 
+/**
+ * @swagger
+ * /upload/file:
+ *   post:
+ *     summary: Загрузка файла в Cloudinary
+ *     tags: [Upload]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [file]
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Файл загружен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 url:
+ *                   type: string
+ *                 fileType:
+ *                   type: string
+ *                 fileName:
+ *                   type: string
+ *       400:
+ *         description: Файл не найден
+ *       500:
+ *         description: Ошибка загрузки
+ */
 uploadRouter.post(
   "/file",
   upload.single("file"),

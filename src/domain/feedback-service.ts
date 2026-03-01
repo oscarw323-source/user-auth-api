@@ -1,4 +1,4 @@
-import { feedbackRepository } from "../repositories/feedback-repository";
+import { feedbackRepository } from "../repositories/mongo/feedback-mongo-repository";
 import { ObjectId } from "mongodb";
 import { FeedbackDBType } from "../repositories/types";
 

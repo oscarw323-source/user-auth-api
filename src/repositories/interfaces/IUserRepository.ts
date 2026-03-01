@@ -1,0 +1,10 @@
+import { usersDBType, DbId } from "../types";
+
+export interface IUserRepository {
+  createUser(user: usersDBType<DbId>): Promise<usersDBType<DbId>>;
+  findUserById(id: DbId): Promise<usersDBType<DbId> | null>;
+  findByLoginOrEmail(loginOrEmail: string): Promise<usersDBType<DbId> | null>;
+  getAllUsers(): Promise<usersDBType<DbId>[]>;
+  updateConfirmation(userId: DbId): Promise<boolean>;
+  deleteByEmail(email: string): Promise<boolean>;
+}

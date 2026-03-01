@@ -1,8 +1,8 @@
 import { emailAdapter } from "../adapters/email-adapter";
-import { usersDBType } from "../repositories/types";
+import { DbId, RecoveryEmailType, usersDBType } from "../repositories/types";
 
 export const emailManager = {
-  async sendPasswordRecoveryMessage(user: any) {
+  async sendPasswordRecoveryMessage(user: RecoveryEmailType) {
     await emailAdapter.sendEmail(
       user.email,
       "Password Recovery",
@@ -10,7 +10,7 @@ export const emailManager = {
     );
   },
 
-  async sendEmailConfirmationMessage(user: usersDBType) {
+  async sendEmailConfirmationMessage(user: usersDBType<DbId>) {
     await emailAdapter.sendEmail(
       user.email,
       "Email Confirmation",

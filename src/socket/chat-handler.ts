@@ -3,7 +3,7 @@ import { chatService } from "../domain/chat-service";
 import { jwtService } from "../application/jwt-service";
 import { userService } from "../domain/users-service";
 import { directChatService } from "../domain/direct-chat-service";
-import { directChatRepository } from "../repositories/direct-chat-repository";
+import { directChatRepository } from "../repositories/mongo/direct-chat-mongo-repository";
 import { ObjectId } from "mongodb";
 
 export const setupChatHandlers = (io: Server) => {
@@ -13,7 +13,6 @@ export const setupChatHandlers = (io: Server) => {
     const token = socket.handshake.auth.token;
 
     if (!token) {
-      console.log("Нет токена, отключаем:", socket.id);
       socket.emit("error", { message: "Unauthorized: No token provided" });
       socket.disconnect();
       return;
@@ -22,7 +21,6 @@ export const setupChatHandlers = (io: Server) => {
     const userId = await jwtService.getUserIdByToken(token);
 
     if (!userId) {
-      console.log("Невалидный токен, отключаем:", socket.id);
       socket.emit("error", { message: "Unauthorized: Invalid token" });
       socket.disconnect();
       return;
@@ -31,11 +29,18 @@ export const setupChatHandlers = (io: Server) => {
     const user = await userService.findUserById(userId);
 
     if (!user) {
-      console.log("Пользователь не найден, отключаем:", socket.id);
       socket.emit("error", { message: "User not found" });
       socket.disconnect();
       return;
     }
+
+    if (!(user._id instanceof ObjectId)) {
+      socket.emit("error", { message: "Invalid user ID type" });
+      socket.disconnect();
+      return;
+    }
+
+    const userObjectId = user._id;
 
     console.log(`Авторизован: ${user.userName} (${socket.id})`);
 
@@ -52,10 +57,8 @@ export const setupChatHandlers = (io: Server) => {
         avatarUrl?: string;
       }) => {
         try {
-          console.log(`Сообщение от ${user.userName}:`, data.message);
-
           const newMessage = await chatService.sendMessage(
-            user._id,
+            userObjectId,
             user.userName,
             data.avatarUrl || user.avatarUrl,
             data.message,
@@ -63,7 +66,6 @@ export const setupChatHandlers = (io: Server) => {
             data.fileType,
             data.fileName,
           );
-
           io.emit("new_message", newMessage);
         } catch (error) {
           console.error("Ошибка отправки сообщения:", error);
@@ -71,14 +73,15 @@ export const setupChatHandlers = (io: Server) => {
         }
       },
     );
+
     socket.on("join_direct", async (data: { toUserId: string }) => {
       try {
         const toUserId = new ObjectId(data.toUserId);
-        const chatId = directChatRepository.getChatId(user._id, toUserId);
+        const chatId = directChatRepository.getChatId(userObjectId, toUserId);
         socket.join(`direct_${chatId}`);
 
         const messages = await directChatService.getMessages(
-          user._id,
+          userObjectId,
           toUserId,
         );
         socket.emit("direct_history", { chatId, messages });
@@ -100,9 +103,9 @@ export const setupChatHandlers = (io: Server) => {
       }) => {
         try {
           const toUserId = new ObjectId(data.toUserId);
-          const chatId = directChatRepository.getChatId(user._id, toUserId);
+          const chatId = directChatRepository.getChatId(userObjectId, toUserId);
           const newMessage = await directChatService.sendMessage(
-            user._id,
+            userObjectId,
             user.userName,
             data.avatarUrl || user.avatarUrl,
             toUserId,
@@ -114,7 +117,7 @@ export const setupChatHandlers = (io: Server) => {
           );
           io.to(`direct_${chatId}`).emit("new_direct_message", newMessage);
         } catch (error) {
-          console.error("Ошибка send _direct", error);
+          console.error("Ошибка send_direct", error);
           socket.emit("error", { message: "Failed to send direct message" });
         }
       },
@@ -122,19 +125,19 @@ export const setupChatHandlers = (io: Server) => {
 
     socket.on("get_direct_chats", async () => {
       try {
-        const chats = await directChatService.getUserChats(user._id);
+        const chats = await directChatService.getUserChats(userObjectId);
         socket.emit("direct_chats", chats);
       } catch (error) {
         console.error("Ошибка get_direct_chats:", error);
-        socket.emit("error", { message: "Failed to send direct message" });
+        socket.emit("error", { message: "Failed to get direct chats" });
       }
     });
 
     socket.on("clear_direct", async (data: { toUserId: string }) => {
       try {
         const toUserId = new ObjectId(data.toUserId);
-        await directChatService.clearMessages(user._id, toUserId);
-        const chatId = directChatRepository.getChatId(user._id, toUserId);
+        await directChatService.clearMessages(userObjectId, toUserId);
+        const chatId = directChatRepository.getChatId(userObjectId, toUserId);
         io.to(`direct_${chatId}`).emit("direct_clered", { chatId });
       } catch (error) {
         console.error("Ошибка clear_chat", error);
@@ -142,33 +145,30 @@ export const setupChatHandlers = (io: Server) => {
     });
 
     socket.on("typing_direct", (data: { toUserId: string }) => {
-      console.log("⌨️ User typing:", user.userName, "→", data.toUserId);
       const toUserId = new ObjectId(data.toUserId);
-      const chatId = directChatRepository.getChatId(user._id, toUserId);
+      const chatId = directChatRepository.getChatId(userObjectId, toUserId);
       io.to(`direct_${chatId}`).emit("user_typing", {
-        userId: user._id.toString(),
+        userId: userObjectId.toString(),
         userName: user.userName,
       });
     });
 
     socket.on("stop_typing_direct", (data: { toUserId: string }) => {
       const toUserId = new ObjectId(data.toUserId);
-      const chatId = directChatRepository.getChatId(user._id, toUserId);
+      const chatId = directChatRepository.getChatId(userObjectId, toUserId);
       io.to(`direct_${chatId}`).emit("user_stop_typing", {
-        userId: user._id.toString(),
+        userId: userObjectId.toString(),
       });
     });
 
     socket.on("mark_read", async (data: { toUserId: string }) => {
       try {
-        console.log("📖 Marking as read:", user.userName, "→", data.toUserId);
         const toUserId = new ObjectId(data.toUserId);
-        await directChatService.markAsRead(user._id, toUserId);
-        const chatId = directChatRepository.getChatId(user._id, toUserId);
+        await directChatService.markAsRead(userObjectId, toUserId);
+        const chatId = directChatRepository.getChatId(userObjectId, toUserId);
         io.to(`direct_${chatId}`).emit("messages_read", {
-          userId: user._id.toString(),
+          userId: userObjectId.toString(),
         });
-        console.log("✅ Marked as read successfully");
       } catch (error) {
         console.error("Ошибка mark_read:", error);
       }

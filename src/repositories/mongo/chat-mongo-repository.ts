@@ -1,5 +1,5 @@
-import { messageCollection } from "../db/db";
-import { MessageDBType } from "./types";
+import { messageCollection } from "../../db/mongo";
+import { MessageDBType } from "../types";
 import { ObjectId } from "mongodb";
 
 export const chatRepository = {

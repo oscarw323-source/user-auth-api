@@ -1,9 +1,20 @@
 import { Request, Response, Router } from "express";
 import { chatService } from "../domain/chat-service";
-import { error } from "node:console";
 
 export const chatRouter = Router({});
 
+/**
+ * @swagger
+ * /chat/clear-messages:
+ *   delete:
+ *     summary: Удалить всю историю чата
+ *     tags: [Chat]
+ *     responses:
+ *       200:
+ *         description: История удалена
+ *       400:
+ *         description: Нет сообщений для удаления
+ */
 chatRouter.delete("/clear-messages", async (req: Request, res: Response) => {
   const result = await chatService.clearAllMesage();
   if (result) {

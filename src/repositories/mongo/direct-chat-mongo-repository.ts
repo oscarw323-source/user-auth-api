@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
-import { db } from "../db/db";
-import { DirectMessageDBType } from "./types";
+import { db } from "../../db/mongo";
+import { DirectMessageDBType } from "../types";
 
 const getCollection = () =>
   db.collection<DirectMessageDBType>("direct_messages");
