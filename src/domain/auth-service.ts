@@ -8,6 +8,7 @@ import { userService } from "./users-service";
 import { v4 as uuidv4 } from "uuid";
 import { add } from "date-fns";
 import { emailManager } from "../managers/email-manager";
+import { cacheService } from "../cache/cache-service";
 
 const emailAttempts: Map<string, { count: number; firstAttempt: Date }> =
   new Map();
@@ -39,6 +40,7 @@ export const authService = {
     };
 
     const createResult = await userRepository.createUser(newUser);
+    cacheService.delete("all_users");
     return createResult;
   },
 
