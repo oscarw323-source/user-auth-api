@@ -19,8 +19,10 @@ import { runMigrations } from "./db/migration";
 import { setupChatHandlers } from "./socket/chat-handler";
 import { chatRouter } from "./routes/chat-router";
 import { uploadRouter } from "./routes/upload-router";
+import helmet from "helmet";
 
 const app = express();
+app.use(helmet());
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {

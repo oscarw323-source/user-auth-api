@@ -2,6 +2,11 @@ import { Request, Response, Router } from "express";
 import { authService } from "../domain/auth-service";
 import { jwtService } from "../application/jwt-service";
 import { userRepository } from "../repositories/db-factory";
+import {
+  emailValidator,
+  loginValidator,
+  registrationValidator,
+} from "../middlewares/validator";
 
 export const authRouter = Router({});
 
@@ -34,19 +39,23 @@ export const authRouter = Router({});
  *       400:
  *         description: Ошибка регистрации
  */
-authRouter.post("/registration", async (req: Request, res: Response) => {
-  try {
-    await authService.createUser(
-      req.body.login,
-      req.body.email,
-      req.body.password,
-    );
-    res.status(201).json({ message: "User created. Check your email." });
-  } catch (error) {
-    console.error("Registration error:", error);
-    res.status(400).json({ error: "Registration failed" });
-  }
-});
+authRouter.post(
+  "/registration",
+  ...registrationValidator,
+  async (req: Request, res: Response) => {
+    try {
+      await authService.createUser(
+        req.body.login,
+        req.body.email,
+        req.body.password,
+      );
+      res.status(201).json({ message: "User created. Check your email." });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(400).json({ error: "Registration failed" });
+    }
+  },
+);
 
 /**
  * @swagger
@@ -81,22 +90,26 @@ authRouter.post("/registration", async (req: Request, res: Response) => {
  *       401:
  *         description: Неверные данные
  */
-authRouter.post("/login", async (req: Request, res: Response) => {
-  try {
-    const user = await authService.checkCredentials(
-      req.body.loginOrEmail,
-      req.body.password,
-    );
-    if (user) {
-      const token = await jwtService.createJWT(user);
-      return res.status(200).json({ token });
+authRouter.post(
+  "/login",
+  ...loginValidator,
+  async (req: Request, res: Response) => {
+    try {
+      const user = await authService.checkCredentials(
+        req.body.loginOrEmail,
+        req.body.password,
+      );
+      if (user) {
+        const token = await jwtService.createJWT(user);
+        return res.status(200).json({ token });
+      }
+      return res.sendStatus(401);
+    } catch (error) {
+      console.error("Login error:", error);
+      return res.sendStatus(500);
     }
-    return res.sendStatus(401);
-  } catch (error) {
-    console.error("Login error:", error);
-    return res.sendStatus(500);
-  }
-});
+  },
+);
 
 /**
  * @swagger
@@ -125,6 +138,7 @@ authRouter.post("/login", async (req: Request, res: Response) => {
  */
 authRouter.post(
   "/resend-registration-code",
+  ...emailValidator,
   async (req: Request, res: Response) => {
     try {
       const resultEmail = await authService.resendConfirmationCode(
