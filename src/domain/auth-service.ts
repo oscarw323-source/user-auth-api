@@ -9,6 +9,8 @@ import { v4 as uuidv4 } from "uuid";
 import { add } from "date-fns";
 import { emailManager } from "../managers/email-manager";
 import { cacheService } from "../cache/cache-service";
+import { refreshTokenRepository } from "../repositories/refresh-token-repository";
+import { jwtService } from "../application/jwt-service";
 
 const emailAttempts: Map<string, { count: number; firstAttempt: Date }> =
   new Map();
@@ -52,6 +54,34 @@ export const authService = {
     if (!isMatch) return null;
 
     return user;
+  },
+
+  async refreshTokens(refreshToken: string) {
+    const userId = await jwtService.getUserIdByRefreshToken(refreshToken);
+    if (!userId) return null;
+
+    const isTokenValid = await refreshTokenRepository.findToken(refreshToken);
+    if (!isTokenValid) return null;
+
+    const user = await userService.findUserById(userId);
+    if (!user) return null;
+
+    await refreshTokenRepository.deleteToken(refreshToken);
+
+    const newAccessToken = await jwtService.createAccessToken(user);
+    const newRefreshToken = await jwtService.createRefreshToken(user);
+
+    await refreshTokenRepository.saveToken(String(user._id), newRefreshToken);
+
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+  },
+
+  async logout(refreshToken: string): Promise<boolean> {
+    const isTokenValid = await refreshTokenRepository.findToken(refreshToken);
+    if (!isTokenValid) return false;
+
+    await refreshTokenRepository.deleteToken(refreshToken);
+    return true;
   },
 
   async _generateHash(password: string) {

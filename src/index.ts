@@ -19,6 +19,7 @@ import { setupChatHandlers } from "./socket/chat-handler";
 import { chatRouter } from "./routes/chat-router";
 import { uploadRouter } from "./routes/upload-router";
 import helmet from "helmet";
+import cookieParser from "cookie-parser";
 
 const app = express();
 app.use(helmet());
@@ -33,6 +34,7 @@ const io = new Server(httpServer, {
 const port = 5001;
 
 app.use(express.json());
+app.use(cookieParser());
 
 const swaggerOptions = {
   definition: {

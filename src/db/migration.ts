@@ -15,5 +15,15 @@ export const runMigrations = async () => {
         is_confirmed BOOLEAN DEFAULT false
     );
     `);
+
+  await pool.query(`
+        CREATE TABLE IF NOT EXISTS refresh_tokens (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        token VARCHAR(512) NOT NULL UNIQUE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        expires_at TIMESTAMP NOT NULL
+    );
+    `);
   console.log("✅ Migrations completed");
 };

@@ -2,6 +2,7 @@ import { Request, Response, Router } from "express";
 import { authService } from "../domain/auth-service";
 import { jwtService } from "../application/jwt-service";
 import { userRepository } from "../repositories/db-factory";
+import { refreshTokenRepository } from "../repositories/refresh-token-repository";
 import {
   emailValidator,
   loginValidator,
@@ -79,16 +80,19 @@ authRouter.post(
  *                 example: "123456"
  *     responses:
  *       200:
- *         description: Возвращает JWT токен
+ *         description: Возвращает accessToken и устанавливает refreshToken в httpOnly cookie
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 token:
+ *                 accessToken:
  *                   type: string
+ *                   example: eyJhbGciOiJIUzI1NiJ9...
  *       401:
  *         description: Неверные данные
+ *       500:
+ *         description: Ошибка сервера
  */
 authRouter.post(
   "/login",
@@ -99,17 +103,101 @@ authRouter.post(
         req.body.loginOrEmail,
         req.body.password,
       );
-      if (user) {
-        const token = await jwtService.createJWT(user);
-        return res.status(200).json({ token });
-      }
-      return res.sendStatus(401);
+      if (!user) return res.sendStatus(401);
+
+      const accessToken = await jwtService.createAccessToken(user);
+      const refreshToken = await jwtService.createRefreshToken(user);
+
+      await refreshTokenRepository.saveToken(String(user._id), refreshToken);
+
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      });
+
+      return res.status(200).json({ accessToken });
     } catch (error) {
       console.error("Login error:", error);
       return res.sendStatus(500);
     }
   },
 );
+
+/**
+ * @swagger
+ * /auth/refresh:
+ *   post:
+ *     summary: Обновление accessToken с помощью refreshToken
+ *     tags: [Auth]
+ *     description: refreshToken берётся автоматически из httpOnly cookie
+ *     responses:
+ *       200:
+ *         description: Возвращает новый accessToken и обновляет refreshToken в cookie
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *                   example: eyJhbGciOiJIUzI1NiJ9...
+ *       401:
+ *         description: Невалидный или отсутствующий refreshToken
+ *       500:
+ *         description: Ошибка сервера
+ */
+authRouter.post("/refresh", async (req: Request, res: Response) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) return res.sendStatus(401);
+
+    const result = await authService.refreshTokens(refreshToken);
+    if (!result) return res.sendStatus(401);
+
+    res.cookie("refreshToken", result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.status(200).json({ accessToken: result.accessToken });
+  } catch (error) {
+    console.error("Refresh error:", error);
+    return res.sendStatus(500);
+  }
+});
+
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: Выход из системы
+ *     tags: [Auth]
+ *     description: Удаляет refreshToken из БД и очищает cookie
+ *     responses:
+ *       204:
+ *         description: Успешный выход
+ *       401:
+ *         description: Невалидный или отсутствующий refreshToken
+ *       500:
+ *         description: Ошибка сервера
+ */
+authRouter.post("/logout", async (req: Request, res: Response) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) return res.sendStatus(401);
+
+    const result = await authService.logout(refreshToken);
+    if (!result) return res.sendStatus(401);
+
+    res.clearCookie("refreshToken");
+    return res.sendStatus(204);
+  } catch (error) {
+    console.error("Logout error:", error);
+    return res.sendStatus(500);
+  }
+});
 
 /**
  * @swagger
