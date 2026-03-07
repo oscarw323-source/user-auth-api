@@ -24,8 +24,18 @@ export const userRepository: IUserRepository = {
     });
   },
 
-  async getAllUsers(): Promise<usersDBType<DbId>[]> {
-    return usersCollection.find().sort({ createdAt: -1 }).toArray();
+  async getAllUsers(page: number, limit: number): Promise<usersDBType<DbId>[]> {
+    const skip = (page - 1) * limit;
+    return usersCollection
+      .find()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
+  },
+
+  async getUserCount(): Promise<number> {
+    return usersCollection.countDocuments();
   },
 
   async updateConfirmation(userId: DbId): Promise<boolean> {

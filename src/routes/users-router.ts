@@ -44,13 +44,44 @@ usersRouter.post("/", async (req: Request, res: Response) => {
  * @swagger
  * /users:
  *   get:
- *     summary: Получить всех пользователей
+ *     summary: Получить пользователей с пагинацией
  *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Номер страницы
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Количество пользователей на странице
  *     responses:
  *       200:
- *         description: Список пользователей
+ *         description: Список пользователей с пагинацией
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 items:
+ *                   type: array
+ *                 totalCount:
+ *                   type: integer
+ *                 page:
+ *                   type: integer
+ *                 limit:
+ *                   type: integer
+ *                 pagesCount:
+ *                   type: integer
  */
 usersRouter.get("/", async (req: Request, res: Response) => {
-  const users = await userService.getAllUsers();
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+
+  const users = await userService.getAllUsers(page, limit);
   res.status(200).send(users);
 });

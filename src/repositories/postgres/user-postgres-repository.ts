@@ -40,11 +40,18 @@ export const userRepository: IUserRepository = {
     return mapToUser(result.rows[0]);
   },
 
-  async getAllUsers(): Promise<usersDBType<DbId>[]> {
+  async getAllUsers(page: number, limit: number): Promise<usersDBType<DbId>[]> {
+    const skip = (page - 1) * limit;
     const result = await pool.query(
-      `SELECT * FROM users ORDER BY created_at DESC`,
+      `SELECT * FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+      [limit, skip],
     );
     return result.rows.map(mapToUser);
+  },
+
+  async getUserCount(): Promise<number> {
+    const result = await pool.query(`SELECT COUNT(*) FROM users`);
+    return parseInt(result.rows[0].count, 10);
   },
 
   async updateConfirmation(userId: DbId): Promise<boolean> {

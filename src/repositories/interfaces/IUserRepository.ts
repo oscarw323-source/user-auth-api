@@ -4,7 +4,8 @@ export interface IUserRepository {
   createUser(user: usersDBType<DbId>): Promise<usersDBType<DbId>>;
   findUserById(id: DbId): Promise<usersDBType<DbId> | null>;
   findByLoginOrEmail(loginOrEmail: string): Promise<usersDBType<DbId> | null>;
-  getAllUsers(): Promise<usersDBType<DbId>[]>;
+  getAllUsers(page: number, limit: number): Promise<usersDBType<DbId>[]>;
+  getUserCount(): Promise<number>;
   updateConfirmation(userId: DbId): Promise<boolean>;
   deleteByEmail(email: string): Promise<boolean>;
 }
