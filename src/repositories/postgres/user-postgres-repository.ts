@@ -6,8 +6,8 @@ export const userRepository: IUserRepository = {
   async createUser(newUser: usersDBType<DbId>): Promise<usersDBType<DbId>> {
     await pool.query(
       `INSERT INTO users
-        (user_name, email, password_hash, password_salt, created_at, avatar_url, confirmation_code, expiration_date, is_confirmed)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        (user_name, email, password_hash, password_salt, created_at, avatar_url, confirmation_code, expiration_date, is_confirmed,role)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
         newUser.userName,
         newUser.email,
@@ -18,6 +18,7 @@ export const userRepository: IUserRepository = {
         newUser.emailConfirmation.confirmationCode,
         newUser.emailConfirmation.expirationDate,
         newUser.emailConfirmation.isConfirmed,
+        newUser.role,
       ],
     );
     return newUser;
@@ -74,6 +75,7 @@ const mapToUser = (row: UserRow): usersDBType<DbId> => ({
   _id: row.id,
   userName: row.user_name,
   email: row.email,
+  role: row.role,
   passwordHash: row.password_hash,
   passwordSalt: row.password_salt,
   createdAt: row.created_at,

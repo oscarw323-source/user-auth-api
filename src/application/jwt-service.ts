@@ -6,11 +6,19 @@ import { settings } from "../seting/settings";
 type JwtPayloadDefault = Jwt | JwtPayload | string;
 type JwtPayloadWithUserId = JwtPayloadDefault & { userId: string };
 
+const parseUserId = (userId: string): DbId => {
+  if (!isNaN(Number(userId))) return Number(userId);
+
+  return new ObjectId(userId);
+};
+
 export const jwtService = {
   async createAccessToken(user: usersDBType<DbId>) {
-    return jwt.sign({ userId: user._id }, settings.JWT_SECRET, {
-      expiresIn: "15m",
-    });
+    return jwt.sign(
+      { userId: user._id, role: user.role },
+      settings.JWT_SECRET,
+      { expiresIn: "15m" },
+    );
   },
 
   async createRefreshToken(user: usersDBType<DbId>) {
@@ -19,7 +27,6 @@ export const jwtService = {
     });
   },
 
-  // ← оставляем для обратной совместимости
   async createJWT(user: usersDBType<DbId>) {
     return this.createAccessToken(user);
   },
@@ -32,7 +39,7 @@ export const jwtService = {
       ) as JwtPayloadWithUserId;
 
       if (!result.userId) return null;
-      return new ObjectId(result.userId);
+      return parseUserId(String(result.userId));
     } catch (error) {
       return null;
     }
@@ -46,7 +53,7 @@ export const jwtService = {
       ) as JwtPayloadWithUserId;
 
       if (!result.userId) return null;
-      return new ObjectId(result.userId);
+      return parseUserId(String(result.userId));
     } catch (error) {
       return null;
     }

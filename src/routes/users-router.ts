@@ -1,6 +1,7 @@
 import { Request, Response, Router } from "express";
 import { authService } from "../domain/auth-service";
 import { userService } from "../domain/users-service";
+import { authMidelware, requireAdmin } from "../middlewares/auth-middleware"; // ← добавили импорт
 
 export const usersRouter = Router({});
 
@@ -10,6 +11,8 @@ export const usersRouter = Router({});
  *   post:
  *     summary: Создать пользователя (admin)
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -30,22 +33,34 @@ export const usersRouter = Router({});
  *     responses:
  *       201:
  *         description: Пользователь создан
+ *       401:
+ *         description: Не авторизован
+ *       403:
+ *         description: Нет доступа (не админ)
  */
-usersRouter.post("/", async (req: Request, res: Response) => {
-  const newUser = await authService.createUser(
-    req.body.login,
-    req.body.email,
-    req.body.password,
-  );
-  res.status(201).send(newUser);
-});
+// ← добавили authMidelware и requireAdmin
+usersRouter.post(
+  "/",
+  authMidelware,
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const newUser = await authService.createUser(
+      req.body.login,
+      req.body.email,
+      req.body.password,
+    );
+    res.status(201).send(newUser);
+  },
+);
 
 /**
  * @swagger
  * /users:
  *   get:
- *     summary: Получить пользователей с пагинацией
+ *     summary: Получить пользователей с пагинацией (admin)
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -77,11 +92,21 @@ usersRouter.post("/", async (req: Request, res: Response) => {
  *                   type: integer
  *                 pagesCount:
  *                   type: integer
+ *       401:
+ *         description: Не авторизован
+ *       403:
+ *         description: Нет доступа (не админ)
  */
-usersRouter.get("/", async (req: Request, res: Response) => {
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
 
-  const users = await userService.getAllUsers(page, limit);
-  res.status(200).send(users);
-});
+usersRouter.get(
+  "/",
+  authMidelware,
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    const users = await userService.getAllUsers(page, limit);
+    res.status(200).send(users);
+  },
+);

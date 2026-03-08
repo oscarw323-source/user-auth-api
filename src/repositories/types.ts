@@ -1,9 +1,12 @@
 import { ObjectId } from "mongodb";
 
+export type UserRole = "user" | "admin";
+
 export type usersDBType<Tid = ObjectId> = {
   _id: Tid;
   userName: string;
   email: string;
+  role: UserRole;
   passwordHash: string;
   passwordSalt: string;
   createdAt: Date;
@@ -59,6 +62,7 @@ export type UserRow = {
   confirmation_code: string;
   expiration_date: Date;
   is_confirmed: boolean;
+  role: UserRole;
 };
 
 export type DbId = ObjectId | number;

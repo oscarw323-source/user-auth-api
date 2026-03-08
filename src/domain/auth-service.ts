@@ -29,6 +29,7 @@ export const authService = {
       email,
       passwordHash,
       passwordSalt: "",
+      role: "user",
       createdAt: new Date(),
       avatarUrl: `https://api.dicebear.com/7.x/personas/svg?seed=${login}`,
       emailConfirmation: {
