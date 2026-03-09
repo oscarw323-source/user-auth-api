@@ -7,5 +7,6 @@ export interface IUserRepository {
   getAllUsers(page: number, limit: number): Promise<usersDBType<DbId>[]>;
   getUserCount(): Promise<number>;
   updateConfirmation(userId: DbId): Promise<boolean>;
+  updatePassword(userId: DbId, newPasswordHash: string): Promise<boolean>;
   deleteByEmail(email: string): Promise<boolean>;
 }

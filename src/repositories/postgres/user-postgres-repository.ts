@@ -62,6 +62,16 @@ export const userRepository: IUserRepository = {
     );
     return result.rowCount === 1;
   },
+  async updatePassword(
+    userId: DbId,
+    newPasswordHash: string,
+  ): Promise<boolean> {
+    const result = await pool.query(
+      `UPDATE users SET password_hash = $1 WHERE id = $2`,
+      [newPasswordHash, userId],
+    );
+    return result.rowCount === 1;
+  },
 
   async deleteByEmail(email: string): Promise<boolean> {
     const result = await pool.query(`DELETE FROM users WHERE email = $1`, [

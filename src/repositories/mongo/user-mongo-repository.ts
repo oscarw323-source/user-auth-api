@@ -46,6 +46,17 @@ export const userRepository: IUserRepository = {
     );
     return result.matchedCount === 1;
   },
+  async updatePassword(
+    userId: DbId,
+    newPasswordHash: string,
+  ): Promise<boolean> {
+    if (!(userId instanceof ObjectId)) return false;
+    const result = await usersCollection.updateOne(
+      { _id: userId },
+      { $set: { passwordHash: newPasswordHash } },
+    );
+    return result.matchedCount === 1;
+  },
 
   async deleteByEmail(email: string): Promise<boolean> {
     const result = await usersCollection.deleteOne({ email });

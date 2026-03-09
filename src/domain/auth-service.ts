@@ -85,6 +85,26 @@ export const authService = {
     return true;
   },
 
+  async changePassword(
+    userId: DbId,
+    oldPassword: string,
+    newPassword: string,
+  ): Promise<{ success: boolean; error?: string }> {
+    const user = await userService.findUserById(userId);
+    if (!user) return { success: false, error: "User not found" };
+
+    const isMatch = await bcrypt.compare(oldPassword, user.passwordHash);
+    if (!isMatch) return { success: false, error: "Invalid old password" };
+
+    const newPasswordHash = await this._generateHash(newPassword);
+
+    await userRepository.updatePassword(userId, newPasswordHash);
+
+    await refreshTokenRepository.deleteAllUserTokens(String(userId));
+
+    return { success: true };
+  },
+
   async _generateHash(password: string) {
     return bcrypt.hash(password, 10);
   },

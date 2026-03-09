@@ -2,12 +2,16 @@ import { Request, Response, Router } from "express";
 import { authService } from "../domain/auth-service";
 import { jwtService } from "../application/jwt-service";
 import { userRepository } from "../repositories/db-factory";
+import { usersDBType, DbId } from "../repositories/types";
 import { refreshTokenRepository } from "../repositories/refresh-token-repository";
 import {
   emailValidator,
   loginValidator,
   registrationValidator,
 } from "../middlewares/validator";
+import { authMidelware } from "../middlewares/auth-middleware";
+
+type AuthRequest = Request & { user?: usersDBType<DbId> | null };
 
 export const authRouter = Router({});
 
@@ -283,6 +287,64 @@ authRouter.get("/confirm", async (req: Request, res: Response) => {
     res.status(400).send("<h1>Invalid or expired code</h1>");
   }
 });
+
+/**
+ * @swagger
+ * /auth/change-password:
+ *   put:
+ *     summary: Смена пароля
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [oldPassword, newPassword]
+ *             properties:
+ *               oldPassword:
+ *                 type: string
+ *                 example: "123456"
+ *               newPassword:
+ *                 type: string
+ *                 example: "newpassword123"
+ *     responses:
+ *       204:
+ *         description: Пароль изменён
+ *       400:
+ *         description: Неверный старый пароль
+ *       401:
+ *         description: Не авторизован
+ */
+authRouter.put(
+  "/change-password",
+  authMidelware,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user?._id;
+      if (!userId) return res.sendStatus(401);
+
+      const { oldPassword, newPassword } = req.body;
+
+      const result = await authService.changePassword(
+        userId,
+        oldPassword,
+        newPassword,
+      );
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      return res.sendStatus(204);
+    } catch (error) {
+      console.error("Change password error:", error);
+      return res.sendStatus(500);
+    }
+  },
+);
 
 /**
  * @swagger
