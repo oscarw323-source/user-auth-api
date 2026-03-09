@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run tests
+        run: yarn test
+        env:
+          JWT_SECRET: test-secret
+          JWT_REFRESH_SECRET: test-refresh-secret
+          DB_TYPE: mongo
+          MONGO_URI: mongodb://localhost:27017
