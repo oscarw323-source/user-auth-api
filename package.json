@@ -13,7 +13,7 @@
     "watch": "tsc -w",
     "devs": "nodemon --exec ts-node src/index.ts",
     "heroku-postbuild": "yarn build",
-    "test": "jest --detectOpenHandles --no-cache",
+    "test": "jest --detectOpenHandles --no-cache --runInBand",
     "sorting": "ts-node src/models/sorting.ts",
     "test:mongo": "ts-node src/testMongo.ts"
   },
