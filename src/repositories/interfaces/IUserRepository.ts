@@ -1,3 +1,4 @@
+import { Db } from "mongodb";
 import { usersDBType, DbId } from "../types";
 
 export interface IUserRepository {
@@ -12,5 +13,10 @@ export interface IUserRepository {
   getUserCount(search?: string): Promise<number>;
   updateConfirmation(userId: DbId): Promise<boolean>;
   updatePassword(userId: DbId, newPasswordHash: string): Promise<boolean>;
+  updateProfile(
+    userId: DbId,
+    login: string,
+    email: string,
+  ): Promise<usersDBType<DbId> | null>;
   deleteByEmail(email: string): Promise<boolean>;
 }

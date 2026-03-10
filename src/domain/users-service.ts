@@ -48,4 +48,12 @@ export const userService = {
     console.log("← getAllUsers из БД");
     return result;
   },
+
+  async updateProfile(
+    userId: DbId,
+    login: string,
+    email: string,
+  ): Promise<usersDBType<DbId> | null> {
+    return userRepository.updateProfile(userId, login, email);
+  },
 };

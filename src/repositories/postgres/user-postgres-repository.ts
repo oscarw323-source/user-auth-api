@@ -90,6 +90,18 @@ export const userRepository: IUserRepository = {
     );
     return result.rowCount === 1;
   },
+  async updateProfile(
+    userId: DbId,
+    login: string,
+    email: string,
+  ): Promise<usersDBType<DbId> | null> {
+    const result = await pool.query(
+      `UPDATE users SET user_name = $1, email = $2 WHERE id = $3 RETURNING *`,
+      [login, email, userId],
+    );
+    if (result.rows.length === 0) return null;
+    return mapToUser(result.rows[0]);
+  },
 
   async deleteByEmail(email: string): Promise<boolean> {
     const result = await pool.query(`DELETE FROM users WHERE email = $1`, [

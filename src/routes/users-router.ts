@@ -84,21 +84,6 @@ usersRouter.post(
  *     responses:
  *       200:
  *         description: Список пользователей с пагинацией
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 items:
- *                   type: array
- *                 totalCount:
- *                   type: integer
- *                 page:
- *                   type: integer
- *                 limit:
- *                   type: integer
- *                 pagesCount:
- *                   type: integer
  *       401:
  *         description: Не авторизован
  *       403:
@@ -137,5 +122,49 @@ usersRouter.get(
   async (req: AuthRequest, res: Response) => {
     if (!req.user) return res.sendStatus(401);
     return res.status(200).json(req.user);
+  },
+);
+
+/**
+ * @swagger
+ * /users/me:
+ *   put:
+ *     summary: Обновить профиль текущего пользователя
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [login, email]
+ *             properties:
+ *               login:
+ *                 type: string
+ *                 example: newlogin
+ *               email:
+ *                 type: string
+ *                 example: new@test.com
+ *     responses:
+ *       200:
+ *         description: Профиль обновлён
+ *       401:
+ *         description: Не авторизован
+ */
+usersRouter.put(
+  "/me",
+  authMidelware,
+  async (req: AuthRequest, res: Response) => {
+    if (!req.user) return res.sendStatus(401);
+
+    const { login, email } = req.body;
+    if (!login || !email) return res.sendStatus(400);
+
+    const updated = await userService.updateProfile(req.user._id, login, email);
+    if (!updated) return res.sendStatus(404);
+
+    return res.status(200).json(updated);
   },
 );

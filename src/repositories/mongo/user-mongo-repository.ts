@@ -82,4 +82,17 @@ export const userRepository: IUserRepository = {
     const result = await usersCollection.deleteOne({ email });
     return result.deletedCount === 1;
   },
+
+  async updateProfile(
+    userId: DbId,
+    login: string,
+    email: string,
+  ): Promise<usersDBType<DbId> | null> {
+    if (!(userId instanceof ObjectId)) return null;
+    await usersCollection.updateOne(
+      { _id: userId },
+      { $set: { userName: login, email } },
+    );
+    return usersCollection.findOne({ _id: userId });
+  },
 };
