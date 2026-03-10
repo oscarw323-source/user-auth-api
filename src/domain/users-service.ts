@@ -19,16 +19,20 @@ export const userService = {
     return userRepository.findUserById(id);
   },
 
-  async getAllUsers(page: number, limit: number): Promise<PaginatedUsers> {
-    const cacheKey = `${CACHE_KEY.ALL_USERS}_${page}_${limit}`;
+  async getAllUsers(
+    page: number,
+    limit: number,
+    search?: string,
+  ): Promise<PaginatedUsers> {
+    const cacheKey = `${CACHE_KEY.ALL_USERS}_${page}_${limit}_${search ?? ""}`;
     const cached = cacheService.get<PaginatedUsers>(cacheKey);
     if (cached) {
       console.log("← getAllUsers из кэша");
       return cached;
     }
     const [items, totalCount] = await Promise.all([
-      userRepository.getAllUsers(page, limit),
-      userRepository.getUserCount(),
+      userRepository.getAllUsers(page, limit, search),
+      userRepository.getUserCount(search),
     ]);
 
     const result: PaginatedUsers = {

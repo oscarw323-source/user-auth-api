@@ -1,7 +1,7 @@
 import { Request, Response, Router } from "express";
 import { authService } from "../domain/auth-service";
 import { userService } from "../domain/users-service";
-import { authMidelware, requireAdmin } from "../middlewares/auth-middleware"; // ← добавили импорт
+import { authMidelware, requireAdmin } from "../middlewares/auth-middleware";
 
 export const usersRouter = Router({});
 
@@ -38,7 +38,6 @@ export const usersRouter = Router({});
  *       403:
  *         description: Нет доступа (не админ)
  */
-// ← добавили authMidelware и requireAdmin
 usersRouter.post(
   "/",
   authMidelware,
@@ -74,6 +73,11 @@ usersRouter.post(
  *           type: integer
  *           default: 10
  *         description: Количество пользователей на странице
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Поиск по login или email
  *     responses:
  *       200:
  *         description: Список пользователей с пагинацией
@@ -97,7 +101,6 @@ usersRouter.post(
  *       403:
  *         description: Нет доступа (не админ)
  */
-
 usersRouter.get(
   "/",
   authMidelware,
@@ -105,8 +108,8 @@ usersRouter.get(
   async (req: Request, res: Response) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
-
-    const users = await userService.getAllUsers(page, limit);
+    const search = req.query.search as string | undefined;
+    const users = await userService.getAllUsers(page, limit, search);
     res.status(200).send(users);
   },
 );

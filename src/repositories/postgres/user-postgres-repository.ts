@@ -41,8 +41,19 @@ export const userRepository: IUserRepository = {
     return mapToUser(result.rows[0]);
   },
 
-  async getAllUsers(page: number, limit: number): Promise<usersDBType<DbId>[]> {
+  async getAllUsers(
+    page: number,
+    limit: number,
+    search?: string,
+  ): Promise<usersDBType<DbId>[]> {
     const skip = (page - 1) * limit;
+    if (search) {
+      const result = await pool.query(
+        `SELECT * FROM users WHERE user_name ILIKE $1 OR email ILIKE $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+        [`%${search}%`, limit, skip],
+      );
+      return result.rows.map(mapToUser);
+    }
     const result = await pool.query(
       `SELECT * FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
       [limit, skip],
@@ -50,7 +61,14 @@ export const userRepository: IUserRepository = {
     return result.rows.map(mapToUser);
   },
 
-  async getUserCount(): Promise<number> {
+  async getUserCount(search?: string): Promise<number> {
+    if (search) {
+      const result = await pool.query(
+        `SELECT COUNT(*) FROM users WHERE user_name ILIKE $1 OR email ILIKE $1`,
+        [`%${search}%`],
+      );
+      return parseInt(result.rows[0].count, 10);
+    }
     const result = await pool.query(`SELECT COUNT(*) FROM users`);
     return parseInt(result.rows[0].count, 10);
   },

@@ -24,18 +24,38 @@ export const userRepository: IUserRepository = {
     });
   },
 
-  async getAllUsers(page: number, limit: number): Promise<usersDBType<DbId>[]> {
+  async getAllUsers(
+    page: number,
+    limit: number,
+    search?: string,
+  ): Promise<usersDBType<DbId>[]> {
     const skip = (page - 1) * limit;
+    const filter = search
+      ? {
+          $or: [
+            { userName: { $regex: search, $options: "i" } },
+            { email: { $regex: search, $options: "i" } },
+          ],
+        }
+      : {};
     return usersCollection
-      .find()
+      .find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .toArray();
   },
 
-  async getUserCount(): Promise<number> {
-    return usersCollection.countDocuments();
+  async getUserCount(search?: string): Promise<number> {
+    const filter = search
+      ? {
+          $or: [
+            { userName: { $regex: search, $options: "i" } },
+            { email: { $regex: search, $options: "i" } },
+          ],
+        }
+      : {};
+    return usersCollection.countDocuments(filter);
   },
 
   async updateConfirmation(userId: DbId): Promise<boolean> {
