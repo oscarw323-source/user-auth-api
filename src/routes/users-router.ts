@@ -1,7 +1,10 @@
 import { Request, Response, Router } from "express";
 import { authService } from "../domain/auth-service";
 import { userService } from "../domain/users-service";
+import { DbId, usersDBType } from "../repositories/types";
 import { authMidelware, requireAdmin } from "../middlewares/auth-middleware";
+
+type AuthRequest = Request & { user?: usersDBType<DbId> | null };
 
 export const usersRouter = Router({});
 
@@ -111,5 +114,28 @@ usersRouter.get(
     const search = req.query.search as string | undefined;
     const users = await userService.getAllUsers(page, limit, search);
     res.status(200).send(users);
+  },
+);
+
+/**
+ * @swagger
+ * /users/me:
+ *   get:
+ *     summary: Получить профиль текущего пользователя
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Профиль пользователя
+ *       401:
+ *         description: Не авторизован
+ */
+usersRouter.get(
+  "/me",
+  authMidelware,
+  async (req: AuthRequest, res: Response) => {
+    if (!req.user) return res.sendStatus(401);
+    return res.status(200).json(req.user);
   },
 );
