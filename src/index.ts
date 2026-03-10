@@ -18,6 +18,7 @@ import { runMigrations } from "./db/migration";
 import { setupChatHandlers } from "./socket/chat-handler";
 import { chatRouter } from "./routes/chat-router";
 import { uploadRouter } from "./routes/upload-router";
+import { rateLimitMiddleware } from "./middlewares/rate-limit-middleware";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 
@@ -35,6 +36,7 @@ const port = 5001;
 
 app.use(express.json());
 app.use(cookieParser());
+app.use(rateLimitMiddleware(100));
 
 const swaggerOptions = {
   definition: {
