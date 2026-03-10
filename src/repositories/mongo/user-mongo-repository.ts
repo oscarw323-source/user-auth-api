@@ -1,6 +1,6 @@
 import { usersCollection } from "../../db/mongo";
 import { IUserRepository } from "../interfaces/IUserRepository";
-import { usersDBType, DbId } from "../types";
+import { usersDBType, DbId, UserRole } from "../types";
 import { ObjectId } from "mongodb";
 
 export const userRepository: IUserRepository = {
@@ -94,5 +94,14 @@ export const userRepository: IUserRepository = {
       { $set: { userName: login, email } },
     );
     return usersCollection.findOne({ _id: userId });
+  },
+
+  async updateRole(userId: DbId, role: UserRole): Promise<boolean> {
+    if (!(userId instanceof ObjectId)) return false;
+    const result = await usersCollection.updateOne(
+      { _id: userId },
+      { $set: { role } },
+    );
+    return result.matchedCount === 1;
   },
 };

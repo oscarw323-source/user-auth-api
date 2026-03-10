@@ -2,7 +2,12 @@ import { Request, Response, Router } from "express";
 import { authService } from "../domain/auth-service";
 import { userService } from "../domain/users-service";
 import { DbId, usersDBType } from "../repositories/types";
-import { authMidelware, requireAdmin } from "../middlewares/auth-middleware";
+import {
+  authMidelware,
+  requireAdmin,
+  requireSuperAdmin,
+} from "../middlewares/auth-middleware";
+import { UserRole } from "../repositories/types";
 
 type AuthRequest = Request & { user?: usersDBType<DbId> | null };
 
@@ -166,5 +171,60 @@ usersRouter.put(
     if (!updated) return res.sendStatus(404);
 
     return res.status(200).json(updated);
+  },
+);
+
+/**
+ * @swagger
+ * /users/{id}/role:
+ *   put:
+ *     summary: Изменить роль пользователя (только super_admin)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [role]
+ *             properties:
+ *               role:
+ *                 type: string
+ *                 enum: [user, admin, super_admin]
+ *                 example: admin
+ *     responses:
+ *       200:
+ *         description: Роль изменена
+ *       400:
+ *         description: Некорректная роль
+ *       401:
+ *         description: Не авторизован
+ *       403:
+ *         description: Нет доступа
+ */
+usersRouter.put(
+  "/:id/role",
+  authMidelware,
+  requireSuperAdmin,
+
+  async (req: Request, res: Response) => {
+    const userId = Number(req.params.id);
+    const { role } = req.body;
+
+    const validRoles: UserRole[] = ["user", "admin", "super_admin"];
+    if (!validRoles.includes(role)) return res.sendStatus(400);
+
+    const result = await userService.updateRole(userId, role);
+    if (!result) return res.sendStatus(404);
+    return res.status(200).json({ message: "Role updated" });
   },
 );

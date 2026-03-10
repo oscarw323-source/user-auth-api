@@ -1,5 +1,5 @@
 import pool from "../../db/postgres";
-import { usersDBType, UserRow, DbId } from "../types";
+import { usersDBType, UserRow, DbId, UserRole } from "../types";
 import { IUserRepository } from "../interfaces/IUserRepository";
 
 export const userRepository: IUserRepository = {
@@ -101,6 +101,14 @@ export const userRepository: IUserRepository = {
     );
     if (result.rows.length === 0) return null;
     return mapToUser(result.rows[0]);
+  },
+
+  async updateRole(userId: DbId, role: UserRole): Promise<boolean> {
+    const result = await pool.query(
+      `UPDATE users SET role = $1 WHERE id = $2`,
+      [role, userId],
+    );
+    return result.rowCount === 1;
   },
 
   async deleteByEmail(email: string): Promise<boolean> {

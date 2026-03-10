@@ -1,5 +1,5 @@
 import { userRepository } from "../repositories/db-factory";
-import { usersDBType, DbId } from "../repositories/types";
+import { usersDBType, DbId, UserRole } from "../repositories/types";
 import { cacheService } from "../cache/cache-service";
 
 const CACHE_KEY = {
@@ -55,5 +55,9 @@ export const userService = {
     email: string,
   ): Promise<usersDBType<DbId> | null> {
     return userRepository.updateProfile(userId, login, email);
+  },
+
+  async updateRole(userId: DbId, role: UserRole): Promise<boolean> {
+    return userRepository.updateRole(userId, role);
   },
 };

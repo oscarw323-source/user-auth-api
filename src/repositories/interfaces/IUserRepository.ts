@@ -1,5 +1,4 @@
-import { Db } from "mongodb";
-import { usersDBType, DbId } from "../types";
+import { usersDBType, DbId, UserRole } from "../types";
 
 export interface IUserRepository {
   createUser(user: usersDBType<DbId>): Promise<usersDBType<DbId>>;
@@ -18,5 +17,6 @@ export interface IUserRepository {
     login: string,
     email: string,
   ): Promise<usersDBType<DbId> | null>;
+  updateRole(userId: DbId, role: UserRole): Promise<boolean>;
   deleteByEmail(email: string): Promise<boolean>;
 }

@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 
-export type UserRole = "user" | "admin";
+export type UserRole = "user" | "admin" | "super_admin";
 
 export type usersDBType<Tid = ObjectId> = {
   _id: Tid;
