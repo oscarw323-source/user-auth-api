@@ -10,6 +10,9 @@ import {
   registrationValidator,
 } from "../middlewares/validator";
 import { authMidelware } from "../middlewares/auth-middleware";
+import { totpService } from "../application/totp-service";
+import { error } from "node:console";
+import { isValid } from "date-fns";
 
 type AuthRequest = Request & { user?: usersDBType<DbId> | null };
 
@@ -108,6 +111,15 @@ authRouter.post(
         req.body.password,
       );
       if (!user) return res.sendStatus(401);
+
+      if (user.role === "super_admin") {
+        const secret = totpService.getSecret();
+        if (!secret)
+          return res.status(403).json({ error: "2FA not configured" });
+        return res
+          .status(200)
+          .json({ requires2FA: true, userId: String(user._id) });
+      }
 
       const accessToken = await jwtService.createAccessToken(user);
       const refreshToken = await jwtService.createRefreshToken(user);
@@ -345,6 +357,94 @@ authRouter.put(
     }
   },
 );
+
+/**
+ * @swagger
+ * /auth/2fa/setup:
+ *   get:
+ *     summary: Получить QR код для настройки 2FA (только super_admin)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: QR код в формате base64
+ *       403:
+ *         description: Нет доступа
+ */
+authRouter.get(
+  "/2fa/setup",
+  authMidelware,
+  async (req: AuthRequest, res: Response) => {
+    if (!req.user || req.user.role !== "super_admin")
+      return res.sendStatus(403);
+
+    const secret = totpService.getSecret();
+    if (!secret)
+      return res
+        .status(400)
+        .json({ error: "SUPER_ADMIN_TOTP_SECRET not set in .env" });
+    const qrCode = await totpService.generateQRCode(req.user.userName, secret);
+    return res.status(200).json({ qrCode });
+  },
+);
+
+/**
+ * @swagger
+ * /auth/2fa/verify:
+ *   post:
+ *     summary: Подтверждение 2FA кода для super_admin
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [userId, code]
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 example: "1"
+ *               code:
+ *                 type: string
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: Возвращает accessToken
+ *       401:
+ *         description: Неверный код
+ */
+authRouter.post("/2fa/verify", async (req: Request, res: Response) => {
+  try {
+    const { userId, code } = req.body;
+    if (!userId || !code) return res.sendStatus(400);
+
+    const secret = totpService.getSecret();
+    if (!secret) return res.status(403).json({ error: "2FA not configured" });
+
+    const isValid = totpService.verifyCode(code, secret);
+    if (!isValid) return res.status(401).json({ error: "2FA not configured" });
+
+    const user = await userRepository.findUserById(Number(userId));
+    if (!user || user.role !== "super_admin") return res.sendStatus(403);
+
+    const accessToken = await jwtService.createAccessToken(user);
+    const refreshToken = await jwtService.createRefreshToken(user);
+
+    await refreshTokenRepository.saveToken(String(user._id), refreshToken);
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+    return res.status(200).json({ accessToken });
+  } catch (error) {
+    console.error("2FA verify error:", error);
+    return res.sendStatus(500);
+  }
+});
 
 /**
  * @swagger
