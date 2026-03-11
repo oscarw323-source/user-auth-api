@@ -1,5 +1,4 @@
 const { createDefaultPreset } = require("ts-jest");
-const tsJestTransformCfg = createDefaultPreset().transform;
 
 /** @type {import("jest").Config} **/
 module.exports = {
@@ -19,5 +18,11 @@ module.exports = {
   },
   moduleNameMapper: {
     "^uuid$": "<rootDir>/src/__tests__/mocks/uuid-mock.ts",
+    "^../logger$": "<rootDir>/src/__tests__/mocks/logger-mock.ts",
+    "^../../logger$": "<rootDir>/src/__tests__/mocks/logger-mock.ts",
+    "^../application/totp-service$":
+      "<rootDir>/src/__tests__/mocks/totp-mock.ts",
+    "^../../application/totp-service$":
+      "<rootDir>/src/__tests__/mocks/totp-mock.ts",
   },
 };
