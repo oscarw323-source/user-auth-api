@@ -7,6 +7,7 @@ import { Server } from "socket.io";
 import path from "path";
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
+import { logger } from "./logger";
 
 import { usersRouter } from "./routes/users-router";
 import { authRouter } from "./routes/auth-router";
@@ -115,9 +116,9 @@ const startApp = async () => {
 
   await new Promise<void>((resolve) => {
     httpServer.listen(port, () => {
-      console.log(`🚀 Server running on http://localhost:${port}`);
-      console.log(`💬 WebSocket ready on ws://localhost:${port}`);
-      console.log(`📄 Chat UI available at http://localhost:${port}`);
+      logger.info(`🚀 Server running on http://localhost:${port}`);
+      logger.info(`💬 WebSocket ready on ws://localhost:${port}`);
+      logger.info(`📄 Chat UI available at http://localhost:${port}`);
       resolve();
     });
   });
@@ -131,14 +132,14 @@ const startApp = async () => {
         addr: port,
         authtoken: process.env.NGROK_AUTHTOKEN,
       });
-      console.log(`🌐 Public ngrok URL: ${url}`);
-      console.log(`💬 WebSocket via ngrok: ${url.replace(/^http/, "ws")}`);
-      console.log(`📄 Chat UI via ngrok: ${url}`);
+      logger.info(`🌐 Public ngrok URL: ${url}`);
+      logger.info(`💬 WebSocket via ngrok: ${url.replace(/^http/, "ws")}`);
+      logger.info(`📄 Chat UI via ngrok: ${url}`);
     } catch (err) {
       if (err instanceof Error) {
-        console.error("❌ ngrok failed:", err.message);
+        logger.error(`❌ ngrok failed: ${err.message}`);
       } else {
-        console.error("❌ ngrok failed:", err);
+        logger.error({ err }, "❌ ngrok failed");
       }
     }
   }
@@ -147,7 +148,7 @@ const startApp = async () => {
 startApp();
 
 process.on("SIGINT", async () => {
-  console.log("\n👋 Shutting down...");
+  logger.info("👋 Shutting down...");
   if (process.env.NODE_ENV !== "production") {
     const ngrok = await import("ngrok");
     await ngrok.kill();

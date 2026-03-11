@@ -1,10 +1,10 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
 import { cloudinaryAdapters } from "../adapters/cloudinary-adapter";
+import { logger } from "../logger";
 import fs from "fs";
 
 const upload = multer({ dest: "uploads/" });
-
 export const uploadRouter = Router();
 
 /**
@@ -53,7 +53,6 @@ uploadRouter.post(
         return;
       }
       const result = await cloudinaryAdapters.uploadFile(req.file.path);
-
       fs.unlinkSync(req.file.path);
       res.status(200).json({
         url: result.url,
@@ -61,7 +60,7 @@ uploadRouter.post(
         fileName: req.file!.originalname,
       });
     } catch (error) {
-      console.error("Ошибка загрузки файла:", error);
+      logger.error({ error }, "Ошибка загрузки файла");
       res.status(500).json({ error: "Ошибка загрузки файла" });
     }
   },

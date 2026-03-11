@@ -1,5 +1,6 @@
 import pool from "./postgres";
 import bcrypt from "bcrypt";
+import { logger } from "../logger";
 
 export const runMigrations = async () => {
   await pool.query(`
@@ -16,11 +17,9 @@ export const runMigrations = async () => {
         is_confirmed BOOLEAN DEFAULT false
     );
     `);
-
   await pool.query(
     ` ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'user';`,
   );
-
   await pool.query(`
         CREATE TABLE IF NOT EXISTS refresh_tokens (
         id SERIAL PRIMARY KEY,
@@ -31,14 +30,13 @@ export const runMigrations = async () => {
     );
     `);
   await createSuperAdminIfNotExists();
-  console.log("✅ Migrations completed");
+  logger.info("✅ Migrations completed");
 };
 
 const createSuperAdminIfNotExists = async () => {
   const login = process.env.SUPER_ADMIN_LOGIN;
   const email = process.env.SUPER_ADMIN_EMAIL;
   const password = process.env.SUPER_ADMIN_PASSWORD;
-
   if (!login || !email || !password) return;
 
   const existing = await pool.query(
@@ -47,7 +45,6 @@ const createSuperAdminIfNotExists = async () => {
   if (existing.rows.length > 0) return;
 
   const passwordHash = await bcrypt.hash(password, 10);
-
   await pool.query(
     `INSERT INTO users (user_name, email, password_hash, password_salt, is_confirmed, role, avatar_url, created_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
@@ -61,6 +58,5 @@ const createSuperAdminIfNotExists = async () => {
       `https://api.dicebear.com/7.x/personas/svg?seed=${login}`,
     ],
   );
-
-  console.log("✅ Super admin created");
+  logger.info("✅ Super admin created");
 };

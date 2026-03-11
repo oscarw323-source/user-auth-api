@@ -5,10 +5,11 @@ import { userService } from "../domain/users-service";
 import { directChatService } from "../domain/direct-chat-service";
 import { directChatRepository } from "../repositories/mongo/direct-chat-mongo-repository";
 import { ObjectId } from "mongodb";
+import { logger } from "../logger";
 
 export const setupChatHandlers = (io: Server) => {
   io.on("connection", async (socket: Socket) => {
-    console.log("Пользователь подключился:", socket.id);
+    logger.info({ socketId: socket.id }, "Пользователь подключился");
 
     const token = socket.handshake.auth.token;
 
@@ -42,7 +43,10 @@ export const setupChatHandlers = (io: Server) => {
 
     const userObjectId = user._id;
 
-    console.log(`Авторизован: ${user.userName} (${socket.id})`);
+    logger.info(
+      { userName: user.userName, socketId: socket.id },
+      "Авторизован",
+    );
 
     const message = await chatService.getAllMessagesSince(user.createdAt);
     socket.emit("message_history", message);
@@ -68,7 +72,7 @@ export const setupChatHandlers = (io: Server) => {
           );
           io.emit("new_message", newMessage);
         } catch (error) {
-          console.error("Ошибка отправки сообщения:", error);
+          logger.error({ error }, "Ошибка отправки сообщения");
           socket.emit("error", { message: "Failed to send message" });
         }
       },
@@ -86,7 +90,7 @@ export const setupChatHandlers = (io: Server) => {
         );
         socket.emit("direct_history", { chatId, messages });
       } catch (error) {
-        console.error("Ошибка join_direct", error);
+        logger.error({ error }, "Ошибка join_direct");
       }
     });
 
@@ -117,7 +121,7 @@ export const setupChatHandlers = (io: Server) => {
           );
           io.to(`direct_${chatId}`).emit("new_direct_message", newMessage);
         } catch (error) {
-          console.error("Ошибка send_direct", error);
+          logger.error({ error }, "Ошибка send_direct");
           socket.emit("error", { message: "Failed to send direct message" });
         }
       },
@@ -128,7 +132,7 @@ export const setupChatHandlers = (io: Server) => {
         const chats = await directChatService.getUserChats(userObjectId);
         socket.emit("direct_chats", chats);
       } catch (error) {
-        console.error("Ошибка get_direct_chats:", error);
+        logger.error({ error }, "Ошибка get_direct_chats");
         socket.emit("error", { message: "Failed to get direct chats" });
       }
     });
@@ -140,7 +144,7 @@ export const setupChatHandlers = (io: Server) => {
         const chatId = directChatRepository.getChatId(userObjectId, toUserId);
         io.to(`direct_${chatId}`).emit("direct_clered", { chatId });
       } catch (error) {
-        console.error("Ошибка clear_chat", error);
+        logger.error({ error }, "Ошибка clear_chat");
       }
     });
 
@@ -170,12 +174,15 @@ export const setupChatHandlers = (io: Server) => {
           userId: userObjectId.toString(),
         });
       } catch (error) {
-        console.error("Ошибка mark_read:", error);
+        logger.error({ error }, "Ошибка mark_read");
       }
     });
 
     socket.on("disconnect", () => {
-      console.log(`Клиент отключился: ${user.userName} (${socket.id})`);
+      logger.info(
+        { userName: user.userName, socketId: socket.id },
+        "Клиент отключился",
+      );
     });
   });
 };

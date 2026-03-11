@@ -1,5 +1,6 @@
 import QRCode from "qrcode";
 import { settings } from "../seting/settings";
+import { logger } from "../logger";
 const otplib = require("otplib");
 
 export const totpService = {
@@ -16,7 +17,7 @@ export const totpService = {
     try {
       return otplib.verify({ token: code, secret });
     } catch (e) {
-      console.error("TOTP verify error:", e);
+      logger.error({ e }, "TOTP verify error");
       return false;
     }
   },

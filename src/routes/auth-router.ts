@@ -11,8 +11,7 @@ import {
 } from "../middlewares/validator";
 import { authMidelware } from "../middlewares/auth-middleware";
 import { totpService } from "../application/totp-service";
-import { error } from "node:console";
-import { isValid } from "date-fns";
+import { logger } from "../logger";
 
 type AuthRequest = Request & { user?: usersDBType<DbId> | null };
 
@@ -59,7 +58,7 @@ authRouter.post(
       );
       res.status(201).json({ message: "User created. Check your email." });
     } catch (error) {
-      console.error("Registration error:", error);
+      logger.error({ error }, "Registration error");
       res.status(400).json({ error: "Registration failed" });
     }
   },
@@ -134,7 +133,7 @@ authRouter.post(
 
       return res.status(200).json({ accessToken });
     } catch (error) {
-      console.error("Login error:", error);
+      logger.error({ error }, "Login error");
       return res.sendStatus(500);
     }
   },
@@ -179,7 +178,7 @@ authRouter.post("/refresh", async (req: Request, res: Response) => {
 
     return res.status(200).json({ accessToken: result.accessToken });
   } catch (error) {
-    console.error("Refresh error:", error);
+    logger.error({ error }, "Refresh error");
     return res.sendStatus(500);
   }
 });
@@ -210,7 +209,7 @@ authRouter.post("/logout", async (req: Request, res: Response) => {
     res.clearCookie("refreshToken");
     return res.sendStatus(204);
   } catch (error) {
-    console.error("Logout error:", error);
+    logger.error({ error }, "Logout error");
     return res.sendStatus(500);
   }
 });
@@ -352,7 +351,7 @@ authRouter.put(
 
       return res.sendStatus(204);
     } catch (error) {
-      console.error("Change password error:", error);
+      logger.error({ error }, "Change password error");
       return res.sendStatus(500);
     }
   },
@@ -424,7 +423,7 @@ authRouter.post("/2fa/verify", async (req: Request, res: Response) => {
     if (!secret) return res.status(403).json({ error: "2FA not configured" });
 
     const isValid = totpService.verifyCode(code, secret);
-    if (!isValid) return res.status(401).json({ error: "2FA not configured" });
+    if (!isValid) return res.status(401).json({ error: "Invalid 2FA code" });
 
     const user = await userRepository.findUserById(Number(userId));
     if (!user || user.role !== "super_admin") return res.sendStatus(403);
@@ -441,7 +440,7 @@ authRouter.post("/2fa/verify", async (req: Request, res: Response) => {
     });
     return res.status(200).json({ accessToken });
   } catch (error) {
-    console.error("2FA verify error:", error);
+    logger.error({ error }, "2FA verify error");
     return res.sendStatus(500);
   }
 });

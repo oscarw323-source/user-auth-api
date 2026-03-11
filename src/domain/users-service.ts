@@ -1,6 +1,7 @@
 import { userRepository } from "../repositories/db-factory";
 import { usersDBType, DbId, UserRole } from "../repositories/types";
 import { cacheService } from "../cache/cache-service";
+import { logger } from "../logger";
 
 const CACHE_KEY = {
   ALL_USERS: "all_users",
@@ -27,9 +28,10 @@ export const userService = {
     const cacheKey = `${CACHE_KEY.ALL_USERS}_${page}_${limit}_${search ?? ""}`;
     const cached = cacheService.get<PaginatedUsers>(cacheKey);
     if (cached) {
-      console.log("← getAllUsers из кэша");
+      logger.info("← getAllUsers из кэша");
       return cached;
     }
+
     const [items, totalCount] = await Promise.all([
       userRepository.getAllUsers(page, limit, search),
       userRepository.getUserCount(search),
@@ -44,8 +46,7 @@ export const userService = {
     };
 
     cacheService.set(cacheKey, result, 60);
-
-    console.log("← getAllUsers из БД");
+    logger.info("← getAllUsers из БД");
     return result;
   },
 
