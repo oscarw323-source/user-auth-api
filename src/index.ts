@@ -24,7 +24,11 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 
 const app = express();
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  }),
+);
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
@@ -57,7 +61,10 @@ const swaggerOptions = {
       },
     },
   },
-  apis: ["./src/routes/*.ts"],
+  apis:
+    process.env.NODE_ENV === "production"
+      ? ["/app/src/routes/*.ts"]
+      : ["./src/routes/*.ts"],
 };
 
 const swaggerSpec = swaggerJSDoc(swaggerOptions);

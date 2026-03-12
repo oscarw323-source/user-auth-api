@@ -34,8 +34,18 @@ export const requireAdmin = (
   next: NextFunction,
 ) => {
   if (!req.user) return res.sendStatus(401);
-
   if (req.user.role !== "admin") return res.sendStatus(403);
+  next();
+};
+
+export const requireAdminOrSuperAdmin = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  if (!req.user) return res.sendStatus(401);
+  if (req.user.role !== "admin" && req.user.role !== "super_admin")
+    return res.sendStatus(403);
   next();
 };
 

@@ -5,6 +5,7 @@ import { DbId, usersDBType } from "../repositories/types";
 import {
   authMidelware,
   requireAdmin,
+  requireAdminOrSuperAdmin,
   requireSuperAdmin,
 } from "../middlewares/auth-middleware";
 import { UserRole } from "../repositories/types";
@@ -49,7 +50,7 @@ export const usersRouter = Router({});
 usersRouter.post(
   "/",
   authMidelware,
-  requireAdmin,
+  requireAdminOrSuperAdmin,
   async (req: Request, res: Response) => {
     const newUser = await authService.createUser(
       req.body.login,
@@ -97,7 +98,7 @@ usersRouter.post(
 usersRouter.get(
   "/",
   authMidelware,
-  requireAdmin,
+  requireAdminOrSuperAdmin,
   async (req: Request, res: Response) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
@@ -215,7 +216,6 @@ usersRouter.put(
   "/:id/role",
   authMidelware,
   requireSuperAdmin,
-
   async (req: Request, res: Response) => {
     const userId = Number(req.params.id);
     const { role } = req.body;
