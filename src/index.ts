@@ -22,6 +22,7 @@ import { uploadRouter } from "./routes/upload-router";
 import { rateLimitMiddleware } from "./middlewares/rate-limit-middleware";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
+import { loadSecrets } from "./config/aws-secrets";
 
 const app = express();
 app.use(
@@ -114,6 +115,10 @@ app.use("/upload", uploadRouter);
 setupChatHandlers(io);
 
 const startApp = async () => {
+  if (process.env.NODE_ENV === "production") {
+    await loadSecrets();
+  }
+
   if (process.env.DB_TYPE === "postgres") {
     await runPostgres();
     await runMigrations();
