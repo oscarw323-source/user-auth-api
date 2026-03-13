@@ -13,7 +13,7 @@ describe("POST /auth/registration", () => {
     const res = await request(app).post("/auth/registration").send({
       login: "testuser",
       email: "testuser@test.com",
-      password: "123456",
+      password: "Test1234",
     });
     expect(res.status).toBe(201);
   });
@@ -22,7 +22,7 @@ describe("POST /auth/registration", () => {
     const res = await request(app).post("/auth/registration").send({
       login: "<script>alert('xss')</script>",
       email: "test@test.com",
-      password: "123456",
+      password: "Test1234",
     });
     expect(res.status).toBe(400);
   });
@@ -31,8 +31,55 @@ describe("POST /auth/registration", () => {
     const res = await request(app).post("/auth/registration").send({
       login: "testuser",
       email: "notanemail",
-      password: "123456",
+      password: "Test1234",
     });
+    expect(res.status).toBe(400);
+  });
+
+  it("должен вернуть 400 если пароль без заглавной буквы", async () => {
+    const res = await request(app).post("/auth/registration").send({
+      login: "testuser",
+      email: "testuser@test.com",
+      password: "test1234",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("должен вернуть 400 если пароль без цифры", async () => {
+    const res = await request(app).post("/auth/registration").send({
+      login: "testuser",
+      email: "testuser@test.com",
+      password: "Testpassword",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("должен вернуть 400 если пароль короче 8 символов", async () => {
+    const res = await request(app).post("/auth/registration").send({
+      login: "testuser",
+      email: "testuser@test.com",
+      password: "Test1",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("должен вернуть 400 если логин короче 3 символов", async () => {
+    const res = await request(app).post("/auth/registration").send({
+      login: "ab",
+      email: "testuser@test.com",
+      password: "Test1234",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("должен вернуть 400 если email длиннее 50 символов", async () => {
+    const res = await request(app)
+      .post("/auth/registration")
+      .send({
+        login: "testuser",
+        email: "a".repeat(45) + "@test.com",
+        password: "Test1234",
+      });
     expect(res.status).toBe(400);
   });
 });
@@ -86,8 +133,8 @@ describe("POST /auth/logout", () => {
 describe("PUT /auth/change-password", () => {
   it("должен вернуть 401 если нет токена", async () => {
     const res = await request(app).put("/auth/change-password").send({
-      oldPassword: "123456",
-      newPassword: "newpassword123",
+      oldPassword: "Test1234",
+      newPassword: "NewTest1234",
     });
     expect(res.status).toBe(401);
   });
@@ -97,8 +144,8 @@ describe("PUT /auth/change-password", () => {
       .put("/auth/change-password")
       .set("Authorization", "Bearer invalid-token")
       .send({
-        oldPassword: "123456",
-        newPassword: "newpassword123",
+        oldPassword: "Test1234",
+        newPassword: "NewTest1234",
       });
     expect(res.status).toBe(401);
   });
