@@ -5,6 +5,29 @@ export const chatRouter = Router({});
 
 /**
  * @swagger
+ * /chat/messages:
+ *   get:
+ *     summary: Получить историю общего чата
+ *     tags: [Chat]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Количество сообщений
+ *     responses:
+ *       200:
+ *         description: Список сообщений
+ */
+chatRouter.get("/messages", async (req: Request, res: Response) => {
+  const limit = parseInt(req.query.limit as string) || 50;
+  const messages = await chatService.getAllMessages(limit);
+  res.status(200).json(messages);
+});
+
+/**
+ * @swagger
  * /chat/clear-messages:
  *   delete:
  *     summary: Удалить всю историю чата

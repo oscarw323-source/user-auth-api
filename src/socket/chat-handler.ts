@@ -7,6 +7,8 @@ import { directChatRepository } from "../repositories/mongo/direct-chat-mongo-re
 import { ObjectId } from "mongodb";
 import { logger } from "../logger";
 
+const userSockets = new Map<string, string>();
+
 export const setupChatHandlers = (io: Server) => {
   io.on("connection", async (socket: Socket) => {
     logger.info({ socketId: socket.id }, "Пользователь подключился");
@@ -35,18 +37,18 @@ export const setupChatHandlers = (io: Server) => {
       return;
     }
 
-    if (!(user._id instanceof ObjectId)) {
-      socket.emit("error", { message: "Invalid user ID type" });
-      socket.disconnect();
-      return;
-    }
-
-    const userObjectId = user._id;
+    const userObjectId =
+      user._id instanceof ObjectId
+        ? user._id
+        : new ObjectId(String(user._id).padStart(24, "0"));
 
     logger.info(
       { userName: user.userName, socketId: socket.id },
       "Авторизован",
     );
+
+    const userIdKey = String(userId);
+    userSockets.set(userIdKey, socket.id);
 
     const message = await chatService.getAllMessagesSince(user.createdAt);
     socket.emit("message_history", message);
@@ -119,7 +121,40 @@ export const setupChatHandlers = (io: Server) => {
             data.fileType,
             data.fileName,
           );
+
           io.to(`direct_${chatId}`).emit("new_direct_message", newMessage);
+
+          const toUserIdKey =
+            String(data.toUserId).replace(/^0+/, "") || data.toUserId;
+          const recipientSocketId = userSockets.get(toUserIdKey);
+          logger.info(
+            {
+              toUserIdKey,
+              recipientSocketId,
+              allSockets: Object.fromEntries(userSockets),
+            },
+            "Debug send_direct",
+          );
+          if (recipientSocketId && recipientSocketId !== socket.id) {
+            const recipientSocket = io.sockets.sockets.get(recipientSocketId);
+            const roomKey = `direct_${chatId}`;
+            const inRoom = recipientSocket?.rooms.has(roomKey);
+            logger.info(
+              {
+                roomKey,
+                inRoom,
+                rooms: recipientSocket ? Array.from(recipientSocket.rooms) : [],
+              },
+              "Debug recipient rooms",
+            );
+            if (recipientSocket && !inRoom) {
+              recipientSocket.emit("new_direct_message", newMessage);
+              logger.info(
+                { recipientSocketId },
+                "Sent notification to recipient",
+              );
+            }
+          }
         } catch (error) {
           logger.error({ error }, "Ошибка send_direct");
           socket.emit("error", { message: "Failed to send direct message" });
@@ -179,6 +214,7 @@ export const setupChatHandlers = (io: Server) => {
     });
 
     socket.on("disconnect", () => {
+      userSockets.delete(userIdKey);
       logger.info(
         { userName: user.userName, socketId: socket.id },
         "Клиент отключился",

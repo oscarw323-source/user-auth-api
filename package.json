@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.1007.0",
+    "@ngrok/ngrok": "^1.7.0",
     "@types/jest": "29",
     "@types/nodemailer": "^7.0.9",
     "@types/supertest": "^6.0.3",
@@ -37,7 +38,6 @@
     "mongodb": "^7.0.0",
     "multer": "^2.0.2",
     "music-metadata": "^11.12.1",
-    "ngrok": "5.0.0-beta.2",
     "nodemailer": "^8.0.1",
     "otplib": "^13.3.0",
     "pg": "^8.19.0",

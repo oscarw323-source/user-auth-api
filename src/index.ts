@@ -25,11 +25,7 @@ import cookieParser from "cookie-parser";
 import { loadSecrets } from "./config/aws-secrets";
 
 const app = express();
-app.use(
-  helmet({
-    contentSecurityPolicy: false,
-  }),
-);
+app.use(helmet({ contentSecurityPolicy: false }));
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
@@ -84,10 +80,8 @@ const swaggerAuthOptions = (
   const base64 = auth.split(" ")[1];
   const decoded = Buffer.from(base64, "base64").toString("utf-8");
   const [user, pass] = decoded.split(":");
-
   const validUser = process.env.SWAGGER_USER || "admin";
   const validPass = process.env.SWAGGER_PASS || "password";
-
   if (user === validUser && pass === validPass) {
     next();
   } else {
@@ -102,9 +96,7 @@ app.use(
   swaggerUi.serve,
   swaggerUi.setup(swaggerSpec),
 );
-
 app.use(express.static(path.join(__dirname, "../public")));
-
 app.use("/users", usersRouter);
 app.use("/auth", authRouter);
 app.use("/feedback", feedbackRouter);
@@ -137,15 +129,14 @@ const startApp = async () => {
 
   if (process.env.NODE_ENV !== "production") {
     try {
-      const ngrok = await import("ngrok");
-      await ngrok.kill();
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      const url = await ngrok.connect({
+      const ngrok = await import("@ngrok/ngrok");
+      const listener = await ngrok.forward({
         addr: port,
         authtoken: process.env.NGROK_AUTHTOKEN,
       });
+      const url = listener.url();
       logger.info(`🌐 Public ngrok URL: ${url}`);
-      logger.info(`💬 WebSocket via ngrok: ${url.replace(/^http/, "ws")}`);
+      logger.info(`💬 WebSocket via ngrok: ${url}`);
       logger.info(`📄 Chat UI via ngrok: ${url}`);
     } catch (err) {
       if (err instanceof Error) {
@@ -162,8 +153,10 @@ startApp();
 process.on("SIGINT", async () => {
   logger.info("👋 Shutting down...");
   if (process.env.NODE_ENV !== "production") {
-    const ngrok = await import("ngrok");
-    await ngrok.kill();
+    try {
+      const ngrok = await import("@ngrok/ngrok");
+      await ngrok.disconnect();
+    } catch {}
   }
   process.exit(0);
 });
