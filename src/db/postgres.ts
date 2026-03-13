@@ -3,7 +3,7 @@ import { logger } from "../logger";
 
 let pool: Pool;
 
-const getPool = () => {
+const getPool = (): Pool => {
   if (!pool) {
     pool = new Pool({
       connectionString:
@@ -23,6 +23,8 @@ export const runPostgres = async () => {
   }
 };
 
-export default {
-  query: (...args: Parameters<Pool["query"]>) => getPool().query(...args),
-};
+export default new Proxy({} as Pool, {
+  get(_target, prop) {
+    return (getPool() as any)[prop];
+  },
+});
