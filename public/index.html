@@ -13,7 +13,6 @@
   </head>
   <body>
     <div class="container">
-      <!-- HEADER -->
       <div class="chat-header">
         <div class="header-avatar" id="headerAvatar">💬</div>
         <div class="header-info">
@@ -44,7 +43,6 @@
         </div>
       </div>
 
-      <!-- SIDEBAR с личными чатами -->
       <div class="sidebar" id="directSidebar" style="display: none">
         <div class="sidebar-header">
           <h3>💬 Личные чаты</h3>
@@ -55,7 +53,6 @@
         </div>
       </div>
 
-      <!-- Overlay для sidebar -->
       <div
         class="sidebar-overlay"
         id="sidebarOverlay"
@@ -63,7 +60,6 @@
         style="display: none"
       ></div>
 
-      <!-- AUTH -->
       <div class="auth-wrapper" id="authWrapper">
         <div class="auth-section" id="authSection">
           <div class="connect-section">
@@ -71,14 +67,56 @@
             <div id="regNotification" class="notification"></div>
             <input type="text" id="regLogin" placeholder="Логин" />
             <input type="email" id="regEmail" placeholder="Email" />
-            <input type="password" id="regPassword" placeholder="Пароль" />
+            <div class="password-wrapper">
+              <input type="password" id="regPassword" placeholder="Пароль" />
+              <button
+                type="button"
+                class="eye-btn"
+                onclick="togglePassword('regPassword', this)"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+            </div>
             <button onclick="register()">Зарегистрироваться</button>
           </div>
           <div class="connect-section">
             <h3>🔑 Вход</h3>
             <div id="loginNotification" class="notification"></div>
             <input type="text" id="loginInput" placeholder="Логин или Email" />
-            <input type="password" id="loginPassword" placeholder="Пароль" />
+            <div class="password-wrapper">
+              <input type="password" id="loginPassword" placeholder="Пароль" />
+              <button
+                type="button"
+                class="eye-btn"
+                onclick="togglePassword('loginPassword', this)"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+            </div>
             <button onclick="login()">Войти</button>
           </div>
           <div class="connect-section">
@@ -87,7 +125,6 @@
         </div>
       </div>
 
-      <!-- AVATAR PICKER -->
       <div class="auth-wrapper" id="avatarWrapper" style="display: none">
         <div class="connect-section avatar-picker-section">
           <h3>🎨 Выбери аватар</h3>
@@ -100,20 +137,17 @@
         </div>
       </div>
 
-      <!-- MESSAGES -->
       <div id="messages" style="display: none">
         <div class="empty-state">📭 Нет сообщений. Начни общение!</div>
       </div>
 
-      <!-- TYPING INDICATOR -->
       <div class="typing-indicator" id="typingIndicator" style="display: none">
         <span id="typingText"></span> печатает
-        <span class="typing-dots">
-          <span>.</span><span>.</span><span>.</span>
-        </span>
+        <span class="typing-dots"
+          ><span>.</span><span>.</span><span>.</span></span
+        >
       </div>
 
-      <!-- INPUT -->
       <div class="input-container" id="inputContainer" style="display: none">
         <emoji-picker
           id="emojiPicker"
@@ -186,8 +220,20 @@
         "Marcus",
         "Andre",
       ];
-
       const wavePlayers = {};
+
+      function togglePassword(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const eyeOpen = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+        const eyeClosed = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+        if (input.type === "password") {
+          input.type = "text";
+          btn.innerHTML = eyeClosed;
+        } else {
+          input.type = "password";
+          btn.innerHTML = eyeOpen;
+        }
+      }
 
       function generateAvatarUrl(seed) {
         return `https://api.dicebear.com/7.x/lorelei/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
@@ -260,7 +306,6 @@
         setTimeout(() => {
           const container = document.getElementById(wavId);
           if (!container) return;
-
           const ws = WaveSurfer.create({
             container: `#${wavId}`,
             waveColor: isMine
@@ -276,7 +321,6 @@
             url: url,
             interact: true,
           });
-
           ws.on("timeupdate", (t) => {
             const el = document.getElementById(`time_${wavId}`);
             if (el) {
@@ -285,12 +329,10 @@
               el.textContent = `${fmt(t)} / ${fmt(dur || 0)}`;
             }
           });
-
           ws.on("finish", () => {
             const btn = document.getElementById(`play_${wavId}`);
             if (btn) btn.textContent = "▶";
           });
-
           wavePlayers[wavId] = ws;
         }, 150);
       }
@@ -305,14 +347,12 @@
           if (avatar) updateHeaderAvatar(avatar);
           connect();
         }
-
         const picker = document.getElementById("emojiPicker");
         picker.addEventListener("emoji-click", (e) => {
           messageInput.value += e.detail.unicode;
           picker.style.display = "none";
           messageInput.focus();
         });
-
         document.addEventListener("click", (e) => {
           const picker = document.getElementById("emojiPicker");
           const emojiBtn = document.querySelector(".emoji-btn");
@@ -344,7 +384,6 @@
           });
           if (!r.ok) throw new Error("Upload failed");
           const data = await r.json();
-
           if (currentMode === "general") {
             socket.emit("send_message", {
               message: "",
@@ -413,7 +452,9 @@
           regEmail.value = "";
           regPassword.value = "";
         } else {
-          showNotification("regNotification", "❌ Ошибка регистрации", "error");
+          const data = await r.json();
+          const msg = data.errors?.[0]?.msg || "❌ Ошибка регистрации";
+          showNotification("regNotification", msg, "error");
         }
       }
 
@@ -498,7 +539,6 @@
           return;
         }
         socket = io({ auth: { token } });
-
         socket.on("connect", () => {
           statusDiv.textContent = "✅ Подключено";
           statusDiv.className = "connected";
@@ -507,17 +547,14 @@
           sendBtn.disabled = false;
           messagesDiv.style.display = "flex";
           inputContainer.style.display = "flex";
-
           try {
             const payload = JSON.parse(atob(token.split(".")[1]));
             myUserId = payload.userId;
           } catch (e) {
             console.error("Failed to parse token:", e);
           }
-
           loadDirectChats();
         });
-
         socket.on("disconnect", () => {
           statusDiv.textContent = "❌ Отключено";
           statusDiv.className = "disconnected";
@@ -525,7 +562,6 @@
           messageInput.disabled = true;
           sendBtn.disabled = true;
         });
-
         socket.on("message_history", (m) => {
           if (currentMode !== "general") return;
           messagesDiv.innerHTML = "";
@@ -536,11 +572,9 @@
             m.forEach((msg) => addMessage(msg, msg.userId));
           }
         });
-
         socket.on("new_message", (msg) => {
           if (currentMode === "general") addMessage(msg, msg.userId);
         });
-
         socket.on("direct_history", ({ messages }) => {
           messagesDiv.innerHTML = "";
           if (messages.length === 0) {
@@ -549,12 +583,9 @@
           } else {
             messages.forEach(addDirectMessage);
           }
-
-          if (currentDirectChat) {
+          if (currentDirectChat)
             socket.emit("mark_read", { toUserId: currentDirectChat.userId });
-          }
         });
-
         socket.on("new_direct_message", (msg) => {
           if (currentMode === "direct") {
             addDirectMessage(msg);
@@ -564,27 +595,22 @@
           }
           loadDirectChats();
         });
-
         socket.on("direct_chats", (chats) => {
           renderDirectChatsList(chats);
         });
-
         socket.on("direct_cleared", () => {
           messagesDiv.innerHTML =
             '<div class="empty-state">🧹 История очищена</div>';
         });
-
         socket.on("user_typing", (data) => {
           if (currentMode === "direct") {
             document.getElementById("typingText").textContent = data.userName;
             typingIndicator.style.display = "flex";
           }
         });
-
         socket.on("user_stop_typing", () => {
           typingIndicator.style.display = "none";
         });
-
         socket.on("messages_read", () => {
           document.querySelectorAll(".read-status").forEach((el) => {
             el.textContent = "✓✓";
@@ -594,11 +620,9 @@
         });
       }
 
-      // Обработчик ввода для "печатает..."
       messageInput.addEventListener("input", () => {
         if (currentMode === "direct" && currentDirectChat) {
           socket.emit("typing_direct", { toUserId: currentDirectChat.userId });
-
           clearTimeout(typingTimeout);
           typingTimeout = setTimeout(() => {
             socket.emit("stop_typing_direct", {
@@ -608,7 +632,6 @@
         }
       });
 
-      // Остановить "печатает" при потере фокуса
       messageInput.addEventListener("blur", () => {
         if (currentMode === "direct" && currentDirectChat && typingTimeout) {
           clearTimeout(typingTimeout);
@@ -621,77 +644,38 @@
       function addMessage(msg, userId) {
         const emptyState = messagesDiv.querySelector(".empty-state");
         if (emptyState) emptyState.remove();
-
         const isMine = msg.userName === myName;
         const div = document.createElement("div");
         div.className = "message " + (isMine ? "mine" : "theirs");
-
         const time = new Date(msg.createdAt).toLocaleTimeString("ru-RU", {
           hour: "2-digit",
           minute: "2-digit",
         });
-
         const avatarUrl = msg.avatarUrl || generateAvatarUrl(msg.userName);
         const userIdStr = userId ? userId.toString() : "";
-
         let fileContent = "";
         if (msg.fileUrl) {
           const isAudio =
             msg.fileType === "audio" ||
             msg.fileUrl.match(/\.(mp3|wav|ogg|aac|m4a)$/i);
           const isVideo = msg.fileType === "video" && !isAudio;
-
           if (msg.fileType === "image") {
             fileContent = `<img src="${msg.fileUrl}" class="msg-image" onclick="window.open('${msg.fileUrl}', '_blank')">`;
           } else if (isVideo) {
             fileContent = `<video controls class="msg-video"><source src="${msg.fileUrl}"></video>`;
           } else if (isAudio) {
             const wavId = `wave_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-            const rawName = msg.fileName || "";
-            const cleanName = rawName.substring(0, 30);
-
-            fileContent = `
-              <div class="audio-card">
-                <div class="audio-cover-placeholder">🎵</div>
-                <div class="audio-bottom">
-                  <div class="audio-filename">${cleanName}</div>
-                  <div class="audio-row">
-                    <button class="play-btn" id="play_${wavId}" onclick="togglePlay('${wavId}')">▶</button>
-                    <div id="${wavId}" class="waveform"></div>
-                  </div>
-                  <div class="audio-footer">
-                    <span class="audio-time" id="time_${wavId}">0:00 / 0:00</span>
-                    <div class="volume-row">
-                      <button class="volume-btn" onclick="toggleMute('${wavId}')" id="vol_${wavId}">🔊</button>
-                      <input type="range" class="volume-slider" min="0" max="1" step="0.05" value="1"
-                        oninput="setVolume('${wavId}', this.value)" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            `;
+            const cleanName = (msg.fileName || "").substring(0, 30);
+            fileContent = `<div class="audio-card"><div class="audio-cover-placeholder">🎵</div><div class="audio-bottom"><div class="audio-filename">${cleanName}</div><div class="audio-row"><button class="play-btn" id="play_${wavId}" onclick="togglePlay('${wavId}')">▶</button><div id="${wavId}" class="waveform"></div></div><div class="audio-footer"><span class="audio-time" id="time_${wavId}">0:00 / 0:00</span><div class="volume-row"><button class="volume-btn" onclick="toggleMute('${wavId}')" id="vol_${wavId}">🔊</button><input type="range" class="volume-slider" min="0" max="1" step="0.05" value="1" oninput="setVolume('${wavId}', this.value)" /></div></div></div></div>`;
             setTimeout(() => initWaveSurfer(wavId, msg.fileUrl, isMine), 200);
           } else {
             fileContent = `<a href="${msg.fileUrl}" target="_blank" class="msg-file">📎 ${msg.fileName}</a>`;
           }
         }
-
         const avatarClick = isMine
           ? ""
           : `onclick="showUserMenu('${userIdStr}', '${msg.userName}', '${avatarUrl}')"`;
-
-        div.innerHTML = `
-          <img src="${avatarUrl}" class="msg-avatar" alt="${msg.userName}" ${avatarClick} style="${isMine ? "" : "cursor: pointer;"}" />
-          <div class="message-content">
-            ${!isMine ? `<div class="message-meta"><span class="message-name">${msg.userName}</span></div>` : ""}
-            <div class="message-bubble">
-              ${msg.message ? `<div class="message-text">${msg.message}</div>` : ""}
-              ${fileContent}
-            </div>
-            <div class="message-time">${time}</div>
-          </div>
-        `;
-
+        div.innerHTML = `<img src="${avatarUrl}" class="msg-avatar" alt="${msg.userName}" ${avatarClick} style="${isMine ? "" : "cursor: pointer;"}" /><div class="message-content">${!isMine ? `<div class="message-meta"><span class="message-name">${msg.userName}</span></div>` : ""}<div class="message-bubble">${msg.message ? `<div class="message-text">${msg.message}</div>` : ""}${fileContent}</div><div class="message-time">${time}</div></div>`;
         messagesDiv.appendChild(div);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
       }
@@ -699,77 +683,36 @@
       function addDirectMessage(msg) {
         const emptyState = messagesDiv.querySelector(".empty-state");
         if (emptyState) emptyState.remove();
-
         const isMine = msg.fromUserName === myName;
         const div = document.createElement("div");
         div.className = "message " + (isMine ? "mine" : "theirs");
-
         const time = new Date(msg.createdAt).toLocaleTimeString("ru-RU", {
           hour: "2-digit",
           minute: "2-digit",
         });
-
         const avatarUrl = msg.fromAvatarUrl;
         const userName = msg.fromUserName;
         const readStatus = isMine ? (msg.isRead ? "✓✓" : "✓") : "";
-
         let fileContent = "";
         if (msg.fileUrl) {
           const isAudio =
             msg.fileType === "audio" ||
             msg.fileUrl.match(/\.(mp3|wav|ogg|aac|m4a)$/i);
           const isVideo = msg.fileType === "video" && !isAudio;
-
           if (msg.fileType === "image") {
             fileContent = `<img src="${msg.fileUrl}" class="msg-image" onclick="window.open('${msg.fileUrl}', '_blank')">`;
           } else if (isVideo) {
             fileContent = `<video controls class="msg-video"><source src="${msg.fileUrl}"></video>`;
           } else if (isAudio) {
             const wavId = `wave_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-            const rawName = msg.fileName || "";
-            const cleanName = rawName.substring(0, 30);
-
-            fileContent = `
-              <div class="audio-card">
-                <div class="audio-cover-placeholder">🎵</div>
-                <div class="audio-bottom">
-                  <div class="audio-filename">${cleanName}</div>
-                  <div class="audio-row">
-                    <button class="play-btn" id="play_${wavId}" onclick="togglePlay('${wavId}')">▶</button>
-                    <div id="${wavId}" class="waveform"></div>
-                  </div>
-                  <div class="audio-footer">
-                    <span class="audio-time" id="time_${wavId}">0:00 / 0:00</span>
-                    <div class="volume-row">
-                      <button class="volume-btn" onclick="toggleMute('${wavId}')" id="vol_${wavId}">🔊</button>
-                      <input type="range" class="volume-slider" min="0" max="1" step="0.05" value="1"
-                        oninput="setVolume('${wavId}', this.value)" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            `;
+            const cleanName = (msg.fileName || "").substring(0, 30);
+            fileContent = `<div class="audio-card"><div class="audio-cover-placeholder">🎵</div><div class="audio-bottom"><div class="audio-filename">${cleanName}</div><div class="audio-row"><button class="play-btn" id="play_${wavId}" onclick="togglePlay('${wavId}')">▶</button><div id="${wavId}" class="waveform"></div></div><div class="audio-footer"><span class="audio-time" id="time_${wavId}">0:00 / 0:00</span><div class="volume-row"><button class="volume-btn" onclick="toggleMute('${wavId}')" id="vol_${wavId}">🔊</button><input type="range" class="volume-slider" min="0" max="1" step="0.05" value="1" oninput="setVolume('${wavId}', this.value)" /></div></div></div></div>`;
             setTimeout(() => initWaveSurfer(wavId, msg.fileUrl, isMine), 200);
           } else {
             fileContent = `<a href="${msg.fileUrl}" target="_blank" class="msg-file">📎 ${msg.fileName}</a>`;
           }
         }
-
-        div.innerHTML = `
-          <img src="${avatarUrl}" class="msg-avatar" alt="${userName}" />
-          <div class="message-content">
-            ${!isMine ? `<div class="message-meta"><span class="message-name">${userName}</span></div>` : ""}
-            <div class="message-bubble">
-              ${msg.message ? `<div class="message-text">${msg.message}</div>` : ""}
-              ${fileContent}
-            </div>
-            <div class="message-footer">
-              <span class="message-time">${time}</span>
-              ${isMine ? `<span class="read-status ${msg.isRead ? "read" : ""}">${readStatus}</span>` : ""}
-            </div>
-          </div>
-        `;
-
+        div.innerHTML = `<img src="${avatarUrl}" class="msg-avatar" alt="${userName}" /><div class="message-content">${!isMine ? `<div class="message-meta"><span class="message-name">${userName}</span></div>` : ""}<div class="message-bubble">${msg.message ? `<div class="message-text">${msg.message}</div>` : ""}${fileContent}</div><div class="message-footer"><span class="message-time">${time}</span>${isMine ? `<span class="read-status ${msg.isRead ? "read" : ""}">${readStatus}</span>` : ""}</div></div>`;
         messagesDiv.appendChild(div);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
       }
@@ -777,7 +720,6 @@
       function sendMessage() {
         const m = messageInput.value.trim();
         if (!m) return;
-
         if (currentMode === "general") {
           socket.emit("send_message", {
             message: m,
@@ -788,7 +730,6 @@
           socket.emit("stop_typing_direct", {
             toUserId: currentDirectChat.userId,
           });
-
           socket.emit("send_direct", {
             toUserId: currentDirectChat.userId,
             toUserName: currentDirectChat.userName,
@@ -842,7 +783,6 @@
         document.getElementById("backBtn").style.display = "none";
         document.getElementById("directsBtn").style.display = "flex";
         typingIndicator.style.display = "none";
-
         messagesDiv.innerHTML = "";
         const token = localStorage.getItem("token");
         if (socket && socket.connected) {
@@ -872,9 +812,7 @@
       }
 
       function loadDirectChats() {
-        if (socket && socket.connected) {
-          socket.emit("get_direct_chats");
-        }
+        if (socket && socket.connected) socket.emit("get_direct_chats");
       }
 
       function renderDirectChatsList(chats) {
@@ -883,7 +821,6 @@
           list.innerHTML = '<div class="empty-chats">Нет личных чатов</div>';
           return;
         }
-
         list.innerHTML = chats
           .map((chat) => {
             const isFromMe = chat.fromUserName === myName;
@@ -894,7 +831,6 @@
             const otherUserAvatar = isFromMe
               ? generateAvatarUrl(chat.toUserName)
               : chat.fromAvatarUrl;
-
             const preview = chat.message
               ? chat.message.substring(0, 30)
               : "📎 Медиа";
@@ -902,22 +838,11 @@
               hour: "2-digit",
               minute: "2-digit",
             });
-
             const unreadBadge =
               !isFromMe && !chat.isRead
                 ? '<span class="unread-badge">•</span>'
                 : "";
-
-            return `
-            <div class="chat-item" onclick="openDirectChat('${otherUserId}', '${otherUserName}', '${otherUserAvatar}')">
-              <img src="${otherUserAvatar}" class="chat-avatar" />
-              <div class="chat-info">
-                <div class="chat-name">${otherUserName} ${unreadBadge}</div>
-                <div class="chat-preview">${preview}</div>
-              </div>
-              <div class="chat-time">${time}</div>
-            </div>
-          `;
+            return `<div class="chat-item" onclick="openDirectChat('${otherUserId}', '${otherUserName}', '${otherUserAvatar}')"><img src="${otherUserAvatar}" class="chat-avatar" /><div class="chat-info"><div class="chat-name">${otherUserName} ${unreadBadge}</div><div class="chat-preview">${preview}</div></div><div class="chat-time">${time}</div></div>`;
           })
           .join("");
       }
