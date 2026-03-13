@@ -50,8 +50,13 @@ export const setupChatHandlers = (io: Server) => {
     const userIdKey = String(userId);
     userSockets.set(userIdKey, socket.id);
 
-    const message = await chatService.getAllMessagesSince(user.createdAt);
-    socket.emit("message_history", message);
+    try {
+      const message = await chatService.getAllMessagesSince(user.createdAt);
+      socket.emit("message_history", message);
+    } catch (error) {
+      logger.error({ error }, "❌ MongoDB unavailable, skipping history");
+      socket.emit("message_history", []);
+    }
 
     socket.on(
       "send_message",
