@@ -24,6 +24,11 @@ export const loadSecrets = async () => {
     process.env.SUPER_ADMIN_TOTP_SECRET = secrets.SUPER_ADMIN_TOTP_SECRET;
     process.env.SWAGGER_USER = secrets.SWAGGER_USER;
     process.env.SWAGGER_PASS = secrets.SWAGGER_PASS;
+    process.env.MONGO_URI = secrets.MONGO_URI;
+    process.env.CLOUDINARY_CLOUD_NAME = secrets.CLOUDINARY_CLOUD_NAME;
+    process.env.CLOUDINARY_API_KEY = secrets.CLOUDINARY_API_KEY;
+    process.env.CLOUDINARY_API_SECRET = secrets.CLOUDINARY_API_SECRET;
+    process.env.MAILTRAP_TOKEN = secrets.MAILTRAP_TOKEN;
 
     logger.info("✅ Secrets loaded from AWS Secrets Manager");
   } catch (err) {
