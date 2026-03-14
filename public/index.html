@@ -102,7 +102,6 @@
         </div>
       </div>
 
-      <!-- SIDEBAR -->
       <div class="sidebar" id="directSidebar" style="display: none">
         <div class="sidebar-header">
           <h3>Личные чаты</h3>
@@ -134,7 +133,6 @@
         style="display: none"
       ></div>
 
-      <!-- AUTH -->
       <div class="auth-wrapper" id="authWrapper">
         <div class="auth-section" id="authSection">
           <div class="connect-section glass-card">
@@ -505,7 +503,7 @@
         }, 150);
       }
 
-      window.onload = () => {
+      window.onload = async () => {
         const t = localStorage.getItem("token");
         const name = localStorage.getItem("userName");
         const avatar = localStorage.getItem("userAvatar");
@@ -514,9 +512,9 @@
           authWrapper.style.display = "none";
           if (avatar) updateHeaderAvatar(avatar);
           showHeaderActions();
-          headerStatus.textContent = "онлайн";
-          headerStatus.className = "header-status online";
-          connect();
+          headerStatus.textContent = "подключение...";
+          headerStatus.className = "header-status";
+          await connect();
         }
         const picker = document.getElementById("emojiPicker");
         picker.addEventListener("emoji-click", (e) => {
@@ -649,12 +647,12 @@
           myName = loginOrEmail;
           showNotification("loginNotification", "Вход выполнен!", "success");
           showHeaderActions();
-          headerStatus.textContent = "онлайн";
-          headerStatus.className = "header-status online";
+          headerStatus.textContent = "подключение...";
+          headerStatus.className = "header-status";
           authSection.classList.add("hide");
-          setTimeout(() => {
+          setTimeout(async () => {
             authWrapper.style.display = "none";
-            connect();
+            await connect();
           }, 400);
         } else {
           showNotification(
@@ -705,25 +703,37 @@
         return null;
       }
 
-      async function connect() {
+      async function getValidToken() {
         let token = localStorage.getItem("token");
-        if (!token) return;
+        if (!token) return null;
 
         try {
           const payload = JSON.parse(atob(token.split(".")[1]));
           const expiresIn = payload.exp * 1000 - Date.now();
-          if (expiresIn < 60000) {
+          if (expiresIn < 14 * 60 * 1000) {
             const newToken = await refreshAccessToken();
-            if (newToken) token = newToken;
+            if (newToken) return newToken;
           }
-        } catch (e) {}
+          return token;
+        } catch (e) {
+          const newToken = await refreshAccessToken();
+          return newToken;
+        }
+      }
+
+      async function connect() {
+        const token = await getValidToken();
+        if (!token) {
+          logout();
+          return;
+        }
 
         if (socket) socket.disconnect();
         socket = io({ auth: { token } });
-        console.log("Socket created:", socket);
+
         let wasConnected = false;
+
         socket.on("connect", () => {
-          console.log("Socket connected!", socket.id);
           wasConnected = true;
           headerStatus.textContent = "онлайн";
           headerStatus.className = "header-status online";
@@ -734,37 +744,52 @@
           try {
             const payload = JSON.parse(atob(token.split(".")[1]));
             myUserId = payload.userId;
-          } catch (e) {
-            console.error("Failed to parse token:", e);
-          }
+          } catch (e) {}
           loadDirectChats();
 
           if (window._refreshInterval) clearInterval(window._refreshInterval);
           window._refreshInterval = setInterval(
             async () => {
               const newToken = await refreshAccessToken();
-              if (newToken) {
-                token = newToken;
+              if (newToken && socket) {
                 socket.auth.token = newToken;
               }
             },
             14 * 60 * 1000,
           );
         });
+
         socket.on("disconnect", (reason) => {
-          console.log(
-            "Socket disconnected, reason:",
-            reason,
-            "wasConnected:",
-            wasConnected,
-          );
-          if (wasConnected && reason !== "io client disconnect") {
-            headerStatus.textContent = "офлайн";
-            headerStatus.className = "header-status";
-            messageInput.disabled = true;
-            sendBtn.disabled = true;
+          console.log("Socket disconnected, reason:", reason);
+          if (reason === "io client disconnect") return;
+
+          headerStatus.textContent = "переподключение...";
+          headerStatus.className = "header-status";
+          messageInput.disabled = true;
+          sendBtn.disabled = true;
+
+          setTimeout(async () => {
+            if (!localStorage.getItem("token")) return;
+            await connect();
+          }, 2000);
+        });
+
+        socket.on("connect_error", async (err) => {
+          console.log("Connect error:", err.message);
+          if (
+            err.message === "Unauthorized: Invalid token" ||
+            err.message === "Unauthorized: No token provided"
+          ) {
+            const newToken = await refreshAccessToken();
+            if (newToken) {
+              socket.auth.token = newToken;
+              socket.connect();
+            } else {
+              logout();
+            }
           }
         });
+
         socket.on("message_history", (m) => {
           if (currentMode !== "general") return;
           messagesDiv.innerHTML = "";
@@ -775,9 +800,11 @@
             m.forEach((msg) => addMessage(msg, msg.userId));
           }
         });
+
         socket.on("new_message", (msg) => {
           if (currentMode === "general") addMessage(msg, msg.userId);
         });
+
         socket.on("direct_history", ({ messages }) => {
           messagesDiv.innerHTML = "";
           if (messages.length === 0) {
@@ -789,6 +816,7 @@
           if (currentDirectChat)
             socket.emit("mark_read", { toUserId: currentDirectChat.userId });
         });
+
         socket.on("new_direct_message", (msg) => {
           const myPaddedId = myUserId ? String(myUserId).padStart(24, "0") : "";
           const fromId = String(msg.fromUserId).padStart(24, "0");
@@ -800,33 +828,33 @@
             currentMode === "direct" &&
             !!currentDirectChat &&
             chatUserId === fromId;
-          if (!isFromMe && !isInThisChat) {
-            playNotificationSound();
-          }
+          if (!isFromMe && !isInThisChat) playNotificationSound();
           if (currentMode === "direct") {
             addDirectMessage(msg);
-            if (currentDirectChat && !isFromMe) {
+            if (currentDirectChat && !isFromMe)
               socket.emit("mark_read", { toUserId: currentDirectChat.userId });
-            }
           }
           loadDirectChats();
         });
-        socket.on("direct_chats", (chats) => {
-          renderDirectChatsList(chats);
-        });
+
+        socket.on("direct_chats", (chats) => renderDirectChatsList(chats));
+
         socket.on("direct_cleared", () => {
           messagesDiv.innerHTML =
             '<div class="empty-state"><span>История очищена</span></div>';
         });
+
         socket.on("user_typing", (data) => {
           if (currentMode === "direct") {
             document.getElementById("typingText").textContent = data.userName;
             typingIndicator.style.display = "flex";
           }
         });
+
         socket.on("user_stop_typing", () => {
           typingIndicator.style.display = "none";
         });
+
         socket.on("messages_read", () => {
           document.querySelectorAll(".read-status").forEach((el) => {
             el.textContent = "✓✓";
@@ -937,9 +965,8 @@
       let audioCtx = null;
 
       function initAudio() {
-        if (!audioCtx) {
+        if (!audioCtx)
           audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
       }
 
       document.addEventListener("click", initAudio, { once: false });
@@ -991,10 +1018,9 @@
         if (currentMode === "general") {
           if (!confirm("Удалить всю историю общего чата?")) return;
           const r = await fetch("/chat/clear-messages", { method: "DELETE" });
-          if (r.ok) {
+          if (r.ok)
             messagesDiv.innerHTML =
               '<div class="empty-state"><span>История очищена</span></div>';
-          }
         } else if (currentMode === "direct" && currentDirectChat) {
           if (!confirm("Удалить историю личного чата?")) return;
           socket.emit("clear_direct", { toUserId: currentDirectChat.userId });
@@ -1003,14 +1029,12 @@
 
       function showUserMenu(userId, userName, avatarUrl) {
         if (userName === myName) return;
-        if (confirm(`Написать личное сообщение ${userName}?`)) {
+        if (confirm(`Написать личное сообщение ${userName}?`))
           openDirectChat(userId, userName, avatarUrl);
-        }
       }
 
       function openDirectChat(userId, userName, avatarUrl) {
         currentMode = "direct";
-
         const paddedId = String(userId).match(/^\d+$/)
           ? String(userId).padStart(24, "0")
           : userId;
