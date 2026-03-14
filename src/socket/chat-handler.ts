@@ -13,27 +13,37 @@ export const setupChatHandlers = (io: Server) => {
   io.on("connection", async (socket: Socket) => {
     logger.info({ socketId: socket.id }, "Пользователь подключился");
 
+    const authTimeout = setTimeout(() => {
+      if (!socket.data.authorized) {
+        logger.warn({ socketId: socket.id }, "Таймаут авторизации — отключаем");
+        socket.disconnect(true);
+      }
+    }, 5000);
+
     const token = socket.handshake.auth.token;
 
     if (!token) {
+      clearTimeout(authTimeout);
       socket.emit("error", { message: "Unauthorized: No token provided" });
-      socket.disconnect();
+      socket.disconnect(true);
       return;
     }
 
     const userId = await jwtService.getUserIdByToken(token);
 
     if (!userId) {
+      clearTimeout(authTimeout);
       socket.emit("error", { message: "Unauthorized: Invalid token" });
-      socket.disconnect();
+      socket.disconnect(true);
       return;
     }
 
     const user = await userService.findUserById(userId);
 
     if (!user) {
+      clearTimeout(authTimeout);
       socket.emit("error", { message: "User not found" });
-      socket.disconnect();
+      socket.disconnect(true);
       return;
     }
 
@@ -41,6 +51,9 @@ export const setupChatHandlers = (io: Server) => {
       user._id instanceof ObjectId
         ? user._id
         : new ObjectId(String(user._id).padStart(24, "0"));
+
+    socket.data.authorized = true;
+    clearTimeout(authTimeout);
 
     logger.info(
       { userName: user.userName, socketId: socket.id },
