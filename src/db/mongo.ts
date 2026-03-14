@@ -6,12 +6,11 @@ import {
 } from "../repositories/types";
 import { logger } from "../logger";
 
-const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017";
-
 let client: MongoClient | null = null;
 
 const getClient = () => {
   if (!client) {
+    const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017";
     client = new MongoClient(mongoUri);
   }
   return client;
