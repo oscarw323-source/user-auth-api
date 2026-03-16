@@ -12,6 +12,7 @@
     "build:clean": "rm -rf dist && esbuild src/index.ts --bundle --platform=node --outfile=dist/index.js --external:bcrypt --external:mongodb",
     "watch": "tsc -w",
     "devs": "nodemon --exec ts-node src/index.ts",
+    "dns:update": "./scripts/update-dns.sh",
     "heroku-postbuild": "yarn build",
     "test": "jest --detectOpenHandles --no-cache --runInBand --forceExit",
     "sorting": "ts-node src/models/sorting.ts",
