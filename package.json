@@ -17,7 +17,8 @@
     "test": "jest --detectOpenHandles --no-cache --runInBand --forceExit",
     "sorting": "ts-node src/models/sorting.ts",
     "test:mongo": "ts-node src/testMongo.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:load": "npx playwright test src/__tests__/load-test.spec.ts"
   },
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.1007.0",
@@ -56,6 +57,7 @@
   "devDependencies": {
     "@babel/core": "^7.28.5",
     "@babel/preset-env": "^7.28.5",
+    "@playwright/test": "^1.58.2",
     "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.6",
@@ -71,6 +73,7 @@
     "esbuild": "^0.27.2",
     "husky": "^9.1.7",
     "nodemon": "^3.1.11",
+    "playwright": "^1.58.2",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"

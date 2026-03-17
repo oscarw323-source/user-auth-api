@@ -8,7 +8,7 @@ const getPool = (): Pool => {
     pool = new Pool({
       connectionString:
         process.env.POSTGRES_URI || "postgresql://localhost:5432/usersDB",
-      max: 5,
+      max: 20,
       min: 1,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,

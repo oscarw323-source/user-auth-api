@@ -13,12 +13,14 @@ export const setupChatHandlers = (io: Server) => {
   io.on("connection", async (socket: Socket) => {
     logger.info({ socketId: socket.id }, "Пользователь подключился");
 
+    const AUTH_TIMEOUT = process.env.NODE_ENV === "production" ? 30000 : 5000;
+
     const authTimeout = setTimeout(() => {
       if (!socket.data.authorized) {
         logger.warn({ socketId: socket.id }, "Таймаут авторизации — отключаем");
         socket.disconnect(true);
       }
-    }, 5000);
+    }, AUTH_TIMEOUT);
 
     const token = socket.handshake.auth.token;
 
@@ -103,7 +105,6 @@ export const setupChatHandlers = (io: Server) => {
         const toUserId = new ObjectId(data.toUserId);
         const chatId = directChatRepository.getChatId(userObjectId, toUserId);
         socket.join(`direct_${chatId}`);
-
         const messages = await directChatService.getMessages(
           userObjectId,
           toUserId,
