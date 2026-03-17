@@ -44,7 +44,6 @@ const bootstrap = async () => {
   const port = 5001;
   app.use(express.json());
   app.use(cookieParser());
-  app.use(rateLimitMiddleware(100));
 
   const swaggerOptions = {
     definition: {
@@ -95,8 +94,14 @@ const bootstrap = async () => {
     swaggerUi.setup(swaggerSpec),
   );
   app.use(express.static(path.join(__dirname, "../public")));
-  app.use("/users", usersRouter);
+  app.use("/auth", rateLimitMiddleware(20));
+  app.use("/users", rateLimitMiddleware(100));
+  app.use("/feedback", rateLimitMiddleware(50));
+  app.use("/email", rateLimitMiddleware(20));
+  app.use("/chat", rateLimitMiddleware(100));
+  app.use("/upload", rateLimitMiddleware(30));
   app.use("/auth", authRouter);
+  app.use("/users", usersRouter);
   app.use("/feedback", feedbackRouter);
   app.use("/email", emailRouter);
   app.use("/chat", chatRouter);
