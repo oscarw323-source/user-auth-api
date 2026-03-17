@@ -94,6 +94,9 @@ const bootstrap = async () => {
     swaggerUi.setup(swaggerSpec),
   );
   app.use(express.static(path.join(__dirname, "../public")));
+  app.use("/auth/login", rateLimitMiddleware(20));
+  app.use("/auth/registration", rateLimitMiddleware(10));
+  app.use("/auth/refresh", rateLimitMiddleware(300));
   app.use("/auth", rateLimitMiddleware(20));
   app.use("/users", rateLimitMiddleware(100));
   app.use("/feedback", rateLimitMiddleware(50));
