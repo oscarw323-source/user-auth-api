@@ -10,6 +10,218 @@
     ></script>
     <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
     <link rel="stylesheet" href="style.css" />
+    <style>
+      .menu-wrapper {
+        position: relative;
+      }
+      .dropdown-menu {
+        display: none;
+        position: absolute;
+        top: 36px;
+        right: 0;
+        background: #1e2a35;
+        border: 1px solid rgba(58, 90, 117, 0.3);
+        border-radius: 10px;
+        min-width: 160px;
+        z-index: 100;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        overflow: hidden;
+      }
+      .dropdown-menu.open {
+        display: block;
+      }
+      .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 16px;
+        color: #cdd6e0;
+        font-size: 14px;
+        cursor: pointer;
+        transition: background 0.15s;
+        font-family: "DM Sans", sans-serif;
+      }
+      .dropdown-item:hover {
+        background: rgba(58, 90, 117, 0.15);
+      }
+      .dropdown-item.danger {
+        color: #f87171;
+      }
+      .dropdown-item svg {
+        flex-shrink: 0;
+        opacity: 0.8;
+      }
+      .mic-btn {
+        width: 36px !important;
+        height: 36px;
+        border-radius: 50% !important;
+        padding: 0 !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent !important;
+        border: 1px solid var(--border) !important;
+        color: var(--text-secondary) !important;
+        flex-shrink: 0;
+        transition: all var(--transition) !important;
+      }
+      .mic-btn:hover {
+        background: var(--accent-dim) !important;
+        border-color: var(--border-mid) !important;
+        color: var(--accent-light) !important;
+      }
+      .mic-btn.recording {
+        border-color: rgba(248, 113, 113, 0.4) !important;
+        color: #f87171 !important;
+        background: rgba(239, 68, 68, 0.08) !important;
+        animation: pulse-mic 1s infinite;
+      }
+      @keyframes pulse-mic {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+      .recording-indicator {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        padding: 0 8px;
+        color: #f87171;
+        font-size: 13px;
+        flex: 1;
+        font-family: "DM Sans", sans-serif;
+      }
+      .recording-indicator.active {
+        display: flex;
+      }
+      .rec-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #f87171;
+        animation: pulse-mic 1s infinite;
+        flex-shrink: 0;
+      }
+      .voice-preview {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        flex: 1;
+        padding: 0 4px;
+      }
+      .voice-preview.active {
+        display: flex;
+      }
+      .voice-mini-player {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-mid);
+        border-radius: 22px;
+        padding: 6px 12px;
+        min-width: 0;
+      }
+      .voice-play-btn {
+        width: 28px !important;
+        height: 28px !important;
+        border-radius: 50% !important;
+        padding: 0 !important;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1 !important;
+        background: var(--blue-mid) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid rgba(58, 90, 117, 0.4) !important;
+        flex-shrink: 0;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transition: all var(--transition) !important;
+      }
+      .voice-play-btn:hover {
+        background: var(--blue-vivid) !important;
+        transform: scale(1.05) !important;
+      }
+      .voice-duration {
+        font-size: 12px;
+        font-family: "DM Mono", monospace;
+        color: var(--text-secondary);
+        flex-shrink: 0;
+      }
+      .voice-waveform-placeholder {
+        flex: 1;
+        height: 6px;
+        background: rgba(58, 90, 117, 0.4);
+        border-radius: 3px;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+      }
+      .voice-waveform-placeholder::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: var(--progress, 0%);
+        height: 100%;
+        background: var(--accent);
+        transition: width 0.1s linear;
+      }
+      .voice-action-btn {
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 50% !important;
+        padding: 0 !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent !important;
+        flex-shrink: 0;
+        transition: all var(--transition) !important;
+      }
+      .voice-action-btn.send {
+        border: 1px solid rgba(76, 175, 137, 0.3) !important;
+        color: #4caf89 !important;
+      }
+      .voice-action-btn.send:hover {
+        background: rgba(76, 175, 137, 0.1) !important;
+        border-color: rgba(76, 175, 137, 0.5) !important;
+        transform: scale(1.05) !important;
+      }
+      .voice-action-btn.discard {
+        border: 1px solid rgba(239, 68, 68, 0.2) !important;
+        color: #f87171 !important;
+      }
+      .voice-action-btn.discard:hover {
+        background: rgba(239, 68, 68, 0.08) !important;
+        border-color: rgba(239, 68, 68, 0.4) !important;
+        transform: scale(1.05) !important;
+      }
+      .call-btn {
+        width: 32px !important;
+        height: 32px;
+        border-radius: 50% !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: 1px solid var(--border) !important;
+        color: var(--text-secondary) !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all var(--transition) !important;
+      }
+      .call-btn:hover {
+        background: var(--accent-dim) !important;
+        border-color: var(--border-mid) !important;
+        color: var(--accent-light) !important;
+      }
+    </style>
   </head>
   <body>
     <div class="container">
@@ -39,7 +251,7 @@
             class="header-btn"
             id="backBtn"
             onclick="switchToGeneral()"
-            title="Общий чат"
+            title="Назад"
             style="display: none"
           >
             <svg
@@ -53,6 +265,28 @@
               stroke-linejoin="round"
             >
               <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <button
+            class="call-btn"
+            id="callBtn"
+            title="Позвонить"
+            style="display: none"
+            onclick="startCall()"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.36 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"
+              />
             </svg>
           </button>
           <button
@@ -77,28 +311,62 @@
               />
             </svg>
           </button>
-          <button
-            class="header-btn"
-            id="logoutBtn"
-            onclick="logout()"
-            title="Выйти"
-            style="display: none"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-          </button>
+          <div class="menu-wrapper" id="menuWrapper" style="display: none">
+            <button class="header-btn" onclick="toggleMenu()" title="Меню">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="5" r="1" />
+                <circle cx="12" cy="12" r="1" />
+                <circle cx="12" cy="19" r="1" />
+              </svg>
+            </button>
+            <div class="dropdown-menu" id="dropdownMenu">
+              <div class="dropdown-item danger" onclick="clearChatFromMenu()">
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                  <path d="M10 11v6" />
+                  <path d="M14 11v6" />
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                </svg>
+                Очистить чат
+              </div>
+              <div class="dropdown-item danger" onclick="logout()">
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Выйти
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -159,8 +427,7 @@
                 id="regLogin"
                 placeholder=" "
                 class="floating-input"
-              />
-              <label class="floating-label">Логин</label>
+              /><label class="floating-label">Логин</label>
             </div>
             <div class="input-group">
               <input
@@ -168,8 +435,7 @@
                 id="regEmail"
                 placeholder=" "
                 class="floating-input"
-              />
-              <label class="floating-label">Email</label>
+              /><label class="floating-label">Email</label>
             </div>
             <div class="input-group password-wrapper">
               <input
@@ -203,7 +469,6 @@
               Зарегистрироваться
             </button>
           </div>
-
           <div class="connect-section glass-card">
             <div class="section-label">
               <svg
@@ -228,8 +493,7 @@
                 id="loginInput"
                 placeholder=" "
                 class="floating-input"
-              />
-              <label class="floating-label">Логин или Email</label>
+              /><label class="floating-label">Логин или Email</label>
             </div>
             <div class="input-group password-wrapper">
               <input
@@ -304,26 +568,11 @@
           style="display: none"
           onchange="handleFileUpload(event)"
         />
-        <button onclick="toggleEmoji()" class="emoji-btn">
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-            <line x1="9" y1="9" x2="9.01" y2="9" />
-            <line x1="15" y1="9" x2="15.01" y2="9" />
-          </svg>
-        </button>
+
         <button
           onclick="document.getElementById('fileInput').click()"
           class="attach-btn"
+          id="attachBtn"
         >
           <svg
             width="18"
@@ -340,13 +589,125 @@
             />
           </svg>
         </button>
+
+        <div class="recording-indicator" id="recordingIndicator">
+          <div class="rec-dot"></div>
+          <span id="recTimer">0:00</span>
+          <span style="color: var(--text-muted); font-size: 12px"
+            >Запись...</span
+          >
+        </div>
+
+        <div class="voice-preview" id="voicePreview">
+          <div class="voice-mini-player">
+            <button
+              class="voice-play-btn"
+              id="voicePlayBtn"
+              onclick="toggleVoicePlay()"
+            >
+              ▶
+            </button>
+            <div
+              class="voice-waveform-placeholder"
+              id="voiceWaveform"
+              onclick="seekVoice(event)"
+            ></div>
+            <span class="voice-duration" id="voiceDuration">0:00</span>
+          </div>
+          <button
+            class="voice-action-btn discard"
+            onclick="discardVoice()"
+            title="Удалить"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            </svg>
+          </button>
+          <button
+            class="voice-action-btn send"
+            onclick="sendVoice()"
+            title="Отправить"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          </button>
+        </div>
+
         <input
           type="text"
           id="messageInput"
-          placeholder="Написать сообщение..."
+          placeholder="Сообщение..."
           disabled
         />
-        <button onclick="sendMessage()" disabled id="sendBtn" class="send-btn">
+
+        <button onclick="toggleEmoji()" class="emoji-btn" id="emojiBtn">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+            <line x1="9" y1="9" x2="9.01" y2="9" />
+            <line x1="15" y1="9" x2="15.01" y2="9" />
+          </svg>
+        </button>
+
+        <button
+          class="mic-btn"
+          id="micBtn"
+          onclick="toggleRecording()"
+          title="Голосовое сообщение"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
+          </svg>
+        </button>
+
+        <button
+          onclick="sendMessage()"
+          id="sendBtn"
+          class="send-btn"
+          style="display: none"
+        >
           <svg
             width="16"
             height="16"
@@ -361,24 +722,6 @@
             <polygon points="22 2 15 22 11 13 2 9 22 2" />
           </svg>
         </button>
-        <button onclick="clearChat()" class="clear-btn" id="clearBtn">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-            <path d="M10 11v6" />
-            <path d="M14 11v6" />
-            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-          </svg>
-        </button>
       </div>
     </div>
 
@@ -390,10 +733,22 @@
       let currentMode = "general";
       let currentDirectChat = null;
       let typingTimeout = null;
+      let mediaRecorder = null;
+      let audioChunks = [];
+      let isRecording = false;
+      let recTimerInterval = null;
+      let recSeconds = 0;
+      let voiceBlob = null;
+      let voiceAudioEl = null;
+      let voicePlaying = false;
+      let voiceProgressInterval = null;
 
       const messagesDiv = document.getElementById("messages");
       const messageInput = document.getElementById("messageInput");
       const sendBtn = document.getElementById("sendBtn");
+      const micBtn = document.getElementById("micBtn");
+      const emojiBtn = document.getElementById("emojiBtn");
+      const attachBtn = document.getElementById("attachBtn");
       const authSection = document.getElementById("authSection");
       const authWrapper = document.getElementById("authWrapper");
       const headerStatus = document.getElementById("headerStatus");
@@ -401,18 +756,235 @@
       const headerAvatar = document.getElementById("headerAvatar");
       const chatTitle = document.getElementById("chatTitle");
       const typingIndicator = document.getElementById("typingIndicator");
-
+      const recordingIndicator = document.getElementById("recordingIndicator");
+      const voicePreview = document.getElementById("voicePreview");
       const wavePlayers = {};
+
+      messageInput.addEventListener("input", () => {
+        const hasText = messageInput.value.trim().length > 0;
+        sendBtn.style.display = hasText ? "flex" : "none";
+        micBtn.style.display = hasText ? "none" : "flex";
+        if (currentMode === "direct" && currentDirectChat) {
+          socket.emit("typing_direct", { toUserId: currentDirectChat.userId });
+          clearTimeout(typingTimeout);
+          typingTimeout = setTimeout(() => {
+            socket.emit("stop_typing_direct", {
+              toUserId: currentDirectChat.userId,
+            });
+          }, 1500);
+        }
+      });
+
+      messageInput.addEventListener("blur", () => {
+        if (currentMode === "direct" && currentDirectChat && typingTimeout) {
+          clearTimeout(typingTimeout);
+          socket.emit("stop_typing_direct", {
+            toUserId: currentDirectChat.userId,
+          });
+        }
+      });
+
+      function toggleMenu() {
+        document.getElementById("dropdownMenu").classList.toggle("open");
+      }
+
+      document.addEventListener("click", (e) => {
+        const wrapper = document.getElementById("menuWrapper");
+        if (wrapper && !wrapper.contains(e.target))
+          document.getElementById("dropdownMenu")?.classList.remove("open");
+        const picker = document.getElementById("emojiPicker");
+        const eb = document.querySelector(".emoji-btn");
+        if (picker && !picker.contains(e.target) && e.target !== eb)
+          picker.style.display = "none";
+      });
+
+      function clearChatFromMenu() {
+        document.getElementById("dropdownMenu").classList.remove("open");
+        clearChat();
+      }
+      function startCall() {
+        alert("Звонки будут реализованы в следующей версии 📞");
+      }
+
+      async function toggleRecording() {
+        if (isRecording) stopRecording();
+        else await startRecording();
+      }
+
+      async function startRecording() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
+          audioChunks = [];
+          voiceBlob = null;
+          mediaRecorder = new MediaRecorder(stream);
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+          };
+          mediaRecorder.onstop = () => {
+            voiceBlob = new Blob(audioChunks, { type: "audio/webm" });
+            stream.getTracks().forEach((t) => t.stop());
+            showVoicePreview();
+          };
+          mediaRecorder.start();
+          isRecording = true;
+          micBtn.classList.add("recording");
+          messageInput.style.display = "none";
+          emojiBtn.style.display = "none";
+          attachBtn.style.display = "none";
+          recordingIndicator.classList.add("active");
+          recSeconds = 0;
+          recTimerInterval = setInterval(() => {
+            recSeconds++;
+            const m = Math.floor(recSeconds / 60);
+            const s = recSeconds % 60;
+            document.getElementById("recTimer").textContent =
+              `${m}:${s.toString().padStart(2, "0")}`;
+          }, 1000);
+        } catch (err) {
+          alert("Нет доступа к микрофону");
+        }
+      }
+
+      function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state !== "inactive")
+          mediaRecorder.stop();
+        isRecording = false;
+        micBtn.classList.remove("recording");
+        recordingIndicator.classList.remove("active");
+        clearInterval(recTimerInterval);
+      }
+
+      function showVoicePreview() {
+        const url = URL.createObjectURL(voiceBlob);
+        voiceAudioEl = new Audio(url);
+        voiceAudioEl.onended = () => {
+          voicePlaying = false;
+          document.getElementById("voicePlayBtn").textContent = "▶";
+          clearInterval(voiceProgressInterval);
+          document
+            .getElementById("voiceWaveform")
+            .style.setProperty("--progress", "0%");
+        };
+        voiceAudioEl.onloadedmetadata = () => {
+          const dur = voiceAudioEl.duration;
+          const m = Math.floor(dur / 60);
+          const s = Math.floor(dur % 60);
+          document.getElementById("voiceDuration").textContent =
+            `${m}:${s.toString().padStart(2, "0")}`;
+        };
+        voicePreview.classList.add("active");
+        micBtn.style.display = "none";
+      }
+
+      function toggleVoicePlay() {
+        if (!voiceAudioEl) return;
+        if (voicePlaying) {
+          voiceAudioEl.pause();
+          voicePlaying = false;
+          document.getElementById("voicePlayBtn").textContent = "▶";
+          clearInterval(voiceProgressInterval);
+        } else {
+          voiceAudioEl.play();
+          voicePlaying = true;
+          document.getElementById("voicePlayBtn").textContent = "⏸";
+          voiceProgressInterval = setInterval(() => {
+            if (voiceAudioEl && voiceAudioEl.duration) {
+              const pct = (
+                (voiceAudioEl.currentTime / voiceAudioEl.duration) *
+                100
+              ).toFixed(1);
+              document
+                .getElementById("voiceWaveform")
+                .style.setProperty("--progress", `${pct}%`);
+            }
+          }, 100);
+        }
+      }
+
+      function seekVoice(e) {
+        if (!voiceAudioEl || !voiceAudioEl.duration) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const pct = Math.max(
+          0,
+          Math.min(1, (e.clientX - rect.left) / rect.width),
+        );
+        voiceAudioEl.currentTime = pct * voiceAudioEl.duration;
+        document
+          .getElementById("voiceWaveform")
+          .style.setProperty("--progress", `${(pct * 100).toFixed(1)}%`);
+        const m = Math.floor(voiceAudioEl.currentTime / 60);
+        const s = Math.floor(voiceAudioEl.currentTime % 60);
+        document.getElementById("voiceDuration").textContent =
+          `${m}:${s.toString().padStart(2, "0")}`;
+      }
+
+      function discardVoice() {
+        if (voiceAudioEl) {
+          voiceAudioEl.pause();
+          voiceAudioEl = null;
+        }
+        voiceBlob = null;
+        voicePlaying = false;
+        clearInterval(voiceProgressInterval);
+        voicePreview.classList.remove("active");
+        messageInput.style.display = "";
+        emojiBtn.style.display = "";
+        attachBtn.style.display = "";
+        micBtn.style.display = "flex";
+        document.getElementById("voicePlayBtn").textContent = "▶";
+        document
+          .getElementById("voiceWaveform")
+          .style.setProperty("--progress", "0%");
+      }
+
+      async function sendVoice() {
+        if (!voiceBlob) return;
+        try {
+          const formData = new FormData();
+          formData.append("file", voiceBlob, `voice_${Date.now()}.webm`);
+          const r = await fetch("/upload/file", {
+            method: "POST",
+            body: formData,
+          });
+          if (!r.ok) throw new Error("Upload failed");
+          const data = await r.json();
+          const payload = {
+            message: "",
+            fileUrl: data.url,
+            fileType: "audio",
+            fileName: `voice_${Date.now()}.webm`,
+            avatarUrl: localStorage.getItem("userAvatar") || "",
+          };
+          if (currentMode === "general") {
+            socket.emit("send_message", payload);
+          } else if (currentMode === "direct" && currentDirectChat) {
+            socket.emit("send_direct", {
+              ...payload,
+              toUserId: currentDirectChat.userId,
+              toUserName: currentDirectChat.userName,
+            });
+          }
+          discardVoice();
+        } catch (err) {
+          showNotification(
+            "loginNotification",
+            "Ошибка отправки голосового",
+            "error",
+          );
+        }
+      }
 
       function showHeaderActions() {
         document.getElementById("directsBtn").style.display = "flex";
-        document.getElementById("logoutBtn").style.display = "flex";
+        document.getElementById("menuWrapper").style.display = "flex";
       }
-
       function hideHeaderActions() {
         document.getElementById("directsBtn").style.display = "none";
-        document.getElementById("logoutBtn").style.display = "none";
+        document.getElementById("menuWrapper").style.display = "none";
         document.getElementById("backBtn").style.display = "none";
+        document.getElementById("callBtn").style.display = "none";
       }
 
       function togglePassword(inputId, btn) {
@@ -450,7 +1022,6 @@
         const btn = document.getElementById(`play_${wavId}`);
         if (btn) btn.textContent = ws.isPlaying() ? "⏸" : "▶";
       }
-
       function toggleMute(wavId) {
         const ws = wavePlayers[wavId];
         if (!ws) return;
@@ -459,7 +1030,6 @@
         const btn = document.getElementById(`vol_${wavId}`);
         if (btn) btn.textContent = !muted ? "🔇" : "🔊";
       }
-
       function setVolume(wavId, val) {
         const ws = wavePlayers[wavId];
         if (!ws) return;
@@ -484,7 +1054,7 @@
             barWidth: 2,
             barGap: 1,
             barRadius: 2,
-            url: url,
+            url,
             interact: true,
           });
           ws.on("timeupdate", (t) => {
@@ -521,13 +1091,9 @@
           messageInput.value += e.detail.unicode;
           picker.style.display = "none";
           messageInput.focus();
-        });
-        document.addEventListener("click", (e) => {
-          const picker = document.getElementById("emojiPicker");
-          const emojiBtn = document.querySelector(".emoji-btn");
-          if (!picker.contains(e.target) && e.target !== emojiBtn) {
-            picker.style.display = "none";
-          }
+          const hasText = messageInput.value.trim().length > 0;
+          sendBtn.style.display = hasText ? "flex" : "none";
+          micBtn.style.display = hasText ? "none" : "flex";
         });
       };
 
@@ -542,7 +1108,8 @@
         if (!file) return;
         messageInput.value = `📎 ${file.name}`;
         messageInput.disabled = true;
-        sendBtn.disabled = true;
+        sendBtn.style.display = "none";
+        micBtn.style.display = "none";
         try {
           const formData = new FormData();
           formData.append("file", file);
@@ -581,7 +1148,8 @@
           messageInput.value = "";
         } finally {
           messageInput.disabled = false;
-          sendBtn.disabled = false;
+          micBtn.style.display = "flex";
+          sendBtn.style.display = "none";
           document.getElementById("fileInput").value = "";
         }
       }
@@ -597,13 +1165,12 @@
         const login = document.getElementById("regLogin").value.trim();
         const email = document.getElementById("regEmail").value.trim();
         const password = document.getElementById("regPassword").value;
-        if (!login || !email || !password) {
+        if (!login || !email || !password)
           return showNotification(
             "regNotification",
             "Заполни все поля",
             "error",
           );
-        }
         const r = await fetch("/auth/registration", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -620,21 +1187,23 @@
           document.getElementById("regPassword").value = "";
         } else {
           const data = await r.json();
-          const msg = data.errors?.[0]?.msg || "Ошибка регистрации";
-          showNotification("regNotification", msg, "error");
+          showNotification(
+            "regNotification",
+            data.errors?.[0]?.msg || "Ошибка регистрации",
+            "error",
+          );
         }
       }
 
       async function login() {
         const loginOrEmail = document.getElementById("loginInput").value.trim();
         const password = document.getElementById("loginPassword").value;
-        if (!loginOrEmail || !password) {
+        if (!loginOrEmail || !password)
           return showNotification(
             "loginNotification",
             "Заполни все поля",
             "error",
           );
-        }
         const r = await fetch("/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -664,6 +1233,7 @@
       }
 
       function logout() {
+        document.getElementById("dropdownMenu")?.classList.remove("open");
         localStorage.removeItem("token");
         localStorage.removeItem("userName");
         localStorage.removeItem("userAvatar");
@@ -678,7 +1248,6 @@
         headerAvatar.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
         headerAvatar.className = "auth-brand-icon";
         messageInput.disabled = true;
-        sendBtn.disabled = true;
         messagesDiv.innerHTML =
           '<div class="empty-state"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3;margin-bottom:10px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Нет сообщений. Начни общение!</span></div>';
         currentMode = "general";
@@ -706,7 +1275,6 @@
       async function getValidToken() {
         let token = localStorage.getItem("token");
         if (!token) return null;
-
         try {
           const payload = JSON.parse(atob(token.split(".")[1]));
           const expiresIn = payload.exp * 1000 - Date.now();
@@ -716,8 +1284,7 @@
           }
           return token;
         } catch (e) {
-          const newToken = await refreshAccessToken();
-          return newToken;
+          return await refreshAccessToken();
         }
       }
 
@@ -727,55 +1294,43 @@
           logout();
           return;
         }
-
         if (socket) socket.disconnect();
         socket = io({ auth: { token } });
-
         let wasConnected = false;
-
         socket.on("connect", () => {
           wasConnected = true;
           headerStatus.textContent = "онлайн";
           headerStatus.className = "header-status online";
           messageInput.disabled = false;
-          sendBtn.disabled = false;
           messagesDiv.style.display = "flex";
           inputContainer.style.display = "flex";
+          micBtn.style.display = "flex";
+          sendBtn.style.display = "none";
           try {
             const payload = JSON.parse(atob(token.split(".")[1]));
             myUserId = payload.userId;
           } catch (e) {}
           loadDirectChats();
-
           if (window._refreshInterval) clearInterval(window._refreshInterval);
           window._refreshInterval = setInterval(
             async () => {
               const newToken = await refreshAccessToken();
-              if (newToken && socket) {
-                socket.auth.token = newToken;
-              }
+              if (newToken && socket) socket.auth.token = newToken;
             },
             14 * 60 * 1000,
           );
         });
-
         socket.on("disconnect", (reason) => {
-          console.log("Socket disconnected, reason:", reason);
           if (reason === "io client disconnect") return;
-
           headerStatus.textContent = "переподключение...";
           headerStatus.className = "header-status";
           messageInput.disabled = true;
-          sendBtn.disabled = true;
-
           setTimeout(async () => {
             if (!localStorage.getItem("token")) return;
             await connect();
           }, 2000);
         });
-
         socket.on("connect_error", async (err) => {
-          console.log("Connect error:", err.message);
           if (
             err.message === "Unauthorized: Invalid token" ||
             err.message === "Unauthorized: No token provided"
@@ -789,34 +1344,26 @@
             }
           }
         });
-
         socket.on("message_history", (m) => {
           if (currentMode !== "general") return;
           messagesDiv.innerHTML = "";
-          if (m.length === 0) {
+          if (m.length === 0)
             messagesDiv.innerHTML =
               '<div class="empty-state"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3;margin-bottom:10px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Нет сообщений. Начни общение!</span></div>';
-          } else {
-            m.forEach((msg) => addMessage(msg, msg.userId));
-          }
+          else m.forEach((msg) => addMessage(msg, msg.userId));
         });
-
         socket.on("new_message", (msg) => {
           if (currentMode === "general") addMessage(msg, msg.userId);
         });
-
         socket.on("direct_history", ({ messages }) => {
           messagesDiv.innerHTML = "";
-          if (messages.length === 0) {
+          if (messages.length === 0)
             messagesDiv.innerHTML =
               '<div class="empty-state"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3;margin-bottom:10px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Нет сообщений. Начни общение!</span></div>';
-          } else {
-            messages.forEach((msg) => addDirectMessage(msg, true));
-          }
+          else messages.forEach((msg) => addDirectMessage(msg, true));
           if (currentDirectChat)
             socket.emit("mark_read", { toUserId: currentDirectChat.userId });
         });
-
         socket.on("new_direct_message", (msg) => {
           const myPaddedId = myUserId ? String(myUserId).padStart(24, "0") : "";
           const fromId = String(msg.fromUserId).padStart(24, "0");
@@ -836,25 +1383,20 @@
           }
           loadDirectChats();
         });
-
         socket.on("direct_chats", (chats) => renderDirectChatsList(chats));
-
         socket.on("direct_cleared", () => {
           messagesDiv.innerHTML =
             '<div class="empty-state"><span>История очищена</span></div>';
         });
-
         socket.on("user_typing", (data) => {
           if (currentMode === "direct") {
             document.getElementById("typingText").textContent = data.userName;
             typingIndicator.style.display = "flex";
           }
         });
-
         socket.on("user_stop_typing", () => {
           typingIndicator.style.display = "none";
         });
-
         socket.on("messages_read", () => {
           document.querySelectorAll(".read-status").forEach((el) => {
             el.textContent = "✓✓";
@@ -864,26 +1406,26 @@
         });
       }
 
-      messageInput.addEventListener("input", () => {
-        if (currentMode === "direct" && currentDirectChat) {
-          socket.emit("typing_direct", { toUserId: currentDirectChat.userId });
-          clearTimeout(typingTimeout);
-          typingTimeout = setTimeout(() => {
-            socket.emit("stop_typing_direct", {
-              toUserId: currentDirectChat.userId,
-            });
-          }, 1500);
-        }
-      });
+      function buildAudioCard(msg, isMine) {
+        const wavId = `wave_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+        const cleanName = (msg.fileName || "").substring(0, 30);
+        setTimeout(() => initWaveSurfer(wavId, msg.fileUrl, isMine), 200);
+        return `<div class="audio-card"><div class="audio-cover-placeholder"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><div class="audio-bottom"><div class="audio-filename">${cleanName}</div><div class="audio-row"><button class="play-btn" id="play_${wavId}" onclick="togglePlay('${wavId}')">▶</button><div id="${wavId}" class="waveform"></div></div><div class="audio-footer"><span class="audio-time" id="time_${wavId}">0:00 / 0:00</span><div class="volume-row"><button class="volume-btn" onclick="toggleMute('${wavId}')" id="vol_${wavId}">🔊</button><input type="range" class="volume-slider" min="0" max="1" step="0.05" value="1" oninput="setVolume('${wavId}', this.value)" /></div></div></div></div>`;
+      }
 
-      messageInput.addEventListener("blur", () => {
-        if (currentMode === "direct" && currentDirectChat && typingTimeout) {
-          clearTimeout(typingTimeout);
-          socket.emit("stop_typing_direct", {
-            toUserId: currentDirectChat.userId,
-          });
-        }
-      });
+      function buildFileContent(msg, isMine) {
+        if (!msg.fileUrl) return "";
+        const isAudio =
+          msg.fileType === "audio" ||
+          msg.fileUrl.match(/\.(mp3|wav|ogg|aac|m4a|webm)$/i);
+        const isVideo = msg.fileType === "video" && !isAudio;
+        if (msg.fileType === "image")
+          return `<img src="${msg.fileUrl}" class="msg-image" onclick="window.open('${msg.fileUrl}', '_blank')">`;
+        if (isVideo)
+          return `<video controls class="msg-video"><source src="${msg.fileUrl}"></video>`;
+        if (isAudio) return buildAudioCard(msg, isMine);
+        return `<a href="${msg.fileUrl}" target="_blank" class="msg-file">📎 ${msg.fileName}</a>`;
+      }
 
       function addMessage(msg, userId) {
         const emptyState = messagesDiv.querySelector(".empty-state");
@@ -897,29 +1439,11 @@
         });
         const avatarUrl = msg.avatarUrl || generateAvatarUrl(msg.userName);
         const userIdStr = userId ? userId.toString() : "";
-        let fileContent = "";
-        if (msg.fileUrl) {
-          const isAudio =
-            msg.fileType === "audio" ||
-            msg.fileUrl.match(/\.(mp3|wav|ogg|aac|m4a)$/i);
-          const isVideo = msg.fileType === "video" && !isAudio;
-          if (msg.fileType === "image") {
-            fileContent = `<img src="${msg.fileUrl}" class="msg-image" onclick="window.open('${msg.fileUrl}', '_blank')">`;
-          } else if (isVideo) {
-            fileContent = `<video controls class="msg-video"><source src="${msg.fileUrl}"></video>`;
-          } else if (isAudio) {
-            const wavId = `wave_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-            const cleanName = (msg.fileName || "").substring(0, 30);
-            fileContent = `<div class="audio-card"><div class="audio-cover-placeholder"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><div class="audio-bottom"><div class="audio-filename">${cleanName}</div><div class="audio-row"><button class="play-btn" id="play_${wavId}" onclick="togglePlay('${wavId}')">▶</button><div id="${wavId}" class="waveform"></div></div><div class="audio-footer"><span class="audio-time" id="time_${wavId}">0:00 / 0:00</span><div class="volume-row"><button class="volume-btn" onclick="toggleMute('${wavId}')" id="vol_${wavId}">🔊</button><input type="range" class="volume-slider" min="0" max="1" step="0.05" value="1" oninput="setVolume('${wavId}', this.value)" /></div></div></div></div>`;
-            setTimeout(() => initWaveSurfer(wavId, msg.fileUrl, isMine), 200);
-          } else {
-            fileContent = `<a href="${msg.fileUrl}" target="_blank" class="msg-file">📎 ${msg.fileName}</a>`;
-          }
-        }
+        const fileContent = buildFileContent(msg, isMine);
         const avatarClick = isMine
           ? ""
           : `onclick="showUserMenu('${userIdStr}', '${msg.userName}', '${avatarUrl}')"`;
-        div.innerHTML = `<img src="${avatarUrl}" class="msg-avatar" alt="${msg.userName}" ${avatarClick} style="${isMine ? "" : "cursor: pointer;"}" /><div class="message-content">${!isMine ? `<div class="message-meta"><span class="message-name">${msg.userName}</span></div>` : ""}<div class="message-bubble">${msg.message ? `<div class="message-text">${msg.message}</div>` : ""}${fileContent}</div><div class="message-time">${time}</div></div>`;
+        div.innerHTML = `<img src="${avatarUrl}" class="msg-avatar" alt="${msg.userName}" ${avatarClick} style="${isMine ? "" : "cursor:pointer;"}" /><div class="message-content">${!isMine ? `<div class="message-meta"><span class="message-name">${msg.userName}</span></div>` : ""}<div class="message-bubble">${msg.message ? `<div class="message-text">${msg.message}</div>` : ""}${fileContent}</div><div class="message-time">${time}</div></div>`;
         messagesDiv.appendChild(div);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
       }
@@ -934,41 +1458,19 @@
           hour: "2-digit",
           minute: "2-digit",
         });
-        const avatarUrl = msg.fromAvatarUrl;
-        const userName = msg.fromUserName;
+        const fileContent = buildFileContent(msg, isMine);
         const readStatus = isMine ? "✓" : "";
         const readClass = isMine ? "read-status" : "";
-        let fileContent = "";
-        if (msg.fileUrl) {
-          const isAudio =
-            msg.fileType === "audio" ||
-            msg.fileUrl.match(/\.(mp3|wav|ogg|aac|m4a)$/i);
-          const isVideo = msg.fileType === "video" && !isAudio;
-          if (msg.fileType === "image") {
-            fileContent = `<img src="${msg.fileUrl}" class="msg-image" onclick="window.open('${msg.fileUrl}', '_blank')">`;
-          } else if (isVideo) {
-            fileContent = `<video controls class="msg-video"><source src="${msg.fileUrl}"></video>`;
-          } else if (isAudio) {
-            const wavId = `wave_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-            const cleanName = (msg.fileName || "").substring(0, 30);
-            fileContent = `<div class="audio-card"><div class="audio-cover-placeholder"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><div class="audio-bottom"><div class="audio-filename">${cleanName}</div><div class="audio-row"><button class="play-btn" id="play_${wavId}" onclick="togglePlay('${wavId}')">▶</button><div id="${wavId}" class="waveform"></div></div><div class="audio-footer"><span class="audio-time" id="time_${wavId}">0:00 / 0:00</span><div class="volume-row"><button class="volume-btn" onclick="toggleMute('${wavId}')" id="vol_${wavId}">🔊</button><input type="range" class="volume-slider" min="0" max="1" step="0.05" value="1" oninput="setVolume('${wavId}', this.value)" /></div></div></div></div>`;
-            setTimeout(() => initWaveSurfer(wavId, msg.fileUrl, isMine), 200);
-          } else {
-            fileContent = `<a href="${msg.fileUrl}" target="_blank" class="msg-file">📎 ${msg.fileName}</a>`;
-          }
-        }
-        div.innerHTML = `<img src="${avatarUrl}" class="msg-avatar" alt="${userName}" /><div class="message-content">${!isMine ? `<div class="message-meta"><span class="message-name">${userName}</span></div>` : ""}<div class="message-bubble">${msg.message ? `<div class="message-text">${msg.message}</div>` : ""}${fileContent}</div><div class="message-footer"><span class="message-time">${time}</span>${isMine ? `<span class="${readClass}">${readStatus}</span>` : ""}</div></div>`;
+        div.innerHTML = `<img src="${msg.fromAvatarUrl}" class="msg-avatar" alt="${msg.fromUserName}" /><div class="message-content">${!isMine ? `<div class="message-meta"><span class="message-name">${msg.fromUserName}</span></div>` : ""}<div class="message-bubble">${msg.message ? `<div class="message-text">${msg.message}</div>` : ""}${fileContent}</div><div class="message-footer"><span class="message-time">${time}</span>${isMine ? `<span class="${readClass}">${readStatus}</span>` : ""}</div></div>`;
         messagesDiv.appendChild(div);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
       }
 
       let audioCtx = null;
-
       function initAudio() {
         if (!audioCtx)
           audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
-
       document.addEventListener("click", initAudio, { once: false });
 
       function playNotificationSound() {
@@ -1012,6 +1514,8 @@
           });
         }
         messageInput.value = "";
+        sendBtn.style.display = "none";
+        micBtn.style.display = "flex";
       }
 
       async function clearChat() {
@@ -1042,6 +1546,7 @@
         chatTitle.textContent = userName;
         updateHeaderAvatar(avatarUrl);
         document.getElementById("backBtn").style.display = "flex";
+        document.getElementById("callBtn").style.display = "flex";
         document.getElementById("directsBtn").style.display = "none";
         typingIndicator.style.display = "none";
         socket.emit("join_direct", { toUserId: userId });
@@ -1054,6 +1559,7 @@
         chatTitle.textContent = "Mint Chat";
         updateHeaderAvatar(localStorage.getItem("userAvatar"));
         document.getElementById("backBtn").style.display = "none";
+        document.getElementById("callBtn").style.display = "none";
         document.getElementById("directsBtn").style.display = "flex";
         typingIndicator.style.display = "none";
         messagesDiv.innerHTML = "";
@@ -1075,16 +1581,12 @@
           sidebar.style.display = "block";
           overlay.style.display = "block";
           loadDirectChats();
-        } else {
-          closeSidebar();
-        }
+        } else closeSidebar();
       }
-
       function closeSidebar() {
         document.getElementById("directSidebar").style.display = "none";
         document.getElementById("sidebarOverlay").style.display = "none";
       }
-
       function loadDirectChats() {
         if (socket && socket.connected) socket.emit("get_direct_chats");
       }
