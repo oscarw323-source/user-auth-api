@@ -2,6 +2,21 @@ const STUN_SERVERS = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
+    {
+      urls: "turn:openrelay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443?transport=tcp",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
   ],
 };
 
@@ -18,6 +33,10 @@ let callEventsInitialized = false;
 let isVideoCall = false;
 
 const normalizeUserId = (id) => String(id).replace(/^0+/, "") || String(id);
+
+function resetCallEvents() {
+  callEventsInitialized = false;
+}
 
 function startRinging() {
   try {
@@ -107,6 +126,7 @@ function showCallModal(name, avatarUrl, state) {
 function hideCallModal() {
   document.getElementById("callModal").style.display = "none";
   clearInterval(callTimerInterval);
+  callTimerInterval = null;
   callSeconds = 0;
   document.getElementById("callModalTimer").textContent = "0:00";
   document.getElementById("localVideo").style.display = "none";
@@ -123,6 +143,7 @@ function showVideoStreams() {
 }
 
 function startCallTimer() {
+  if (callTimerInterval) return;
   callSeconds = 0;
   callTimerInterval = setInterval(() => {
     callSeconds++;
@@ -133,7 +154,18 @@ function startCallTimer() {
   }, 1000);
 }
 
+function closePeerConnection() {
+  if (peerConnection) {
+    peerConnection.onicecandidate = null;
+    peerConnection.ontrack = null;
+    peerConnection.onconnectionstatechange = null;
+    peerConnection.close();
+    peerConnection = null;
+  }
+}
+
 function createPeerConnection(socket, toUserId) {
+  closePeerConnection();
   peerConnection = new RTCPeerConnection(STUN_SERVERS);
 
   peerConnection.onicecandidate = (e) => {
@@ -141,19 +173,22 @@ function createPeerConnection(socket, toUserId) {
       socket.emit("ice_candidate", { toUserId, candidate: e.candidate });
   };
 
+  peerConnection.onconnectionstatechange = () => {
+    const state = peerConnection?.connectionState;
+    if (state === "failed" || state === "disconnected") {
+      cleanupCall();
+    }
+  };
+
   peerConnection.ontrack = (e) => {
     const stream = e.streams[0];
+    if (!stream) return;
     const hasVideo = stream.getVideoTracks().length > 0;
-
     if (hasVideo) {
       showVideoStreams();
       const remoteVideo = document.getElementById("remoteVideo");
-      const assignStream = () => {
-        remoteVideo.srcObject = stream;
-        remoteVideo.play().catch(() => {});
-      };
-      assignStream();
-      setTimeout(assignStream, 300);
+      remoteVideo.srcObject = stream;
+      remoteVideo.play().catch(() => {});
     } else {
       let remoteAudio = document.getElementById("remoteAudio");
       if (!remoteAudio) {
@@ -177,10 +212,11 @@ function createPeerConnection(socket, toUserId) {
 
 function cleanupCall() {
   stopRinging();
-  peerConnection?.close();
-  peerConnection = null;
-  localStream?.getTracks().forEach((t) => t.stop());
-  localStream = null;
+  closePeerConnection();
+  if (localStream) {
+    localStream.getTracks().forEach((t) => t.stop());
+    localStream = null;
+  }
   document.getElementById("remoteAudio")?.remove();
   isMuted = false;
   isCameraOff = false;
@@ -206,6 +242,7 @@ function resetCameraIcon() {
 
 async function startCall() {
   if (!currentDirectChat) return;
+  if (peerConnection) cleanupCall();
   const toUserId = normalizeUserId(currentDirectChat.userId);
   isVideoCall = false;
   try {
@@ -228,6 +265,7 @@ async function startCall() {
 
 async function startVideoCall() {
   if (!currentDirectChat) return;
+  if (peerConnection) cleanupCall();
   const toUserId = normalizeUserId(currentDirectChat.userId);
   isVideoCall = true;
   try {
@@ -265,6 +303,7 @@ function cancelCall() {
 }
 
 function handleIncomingCall(data) {
+  if (activeCallUserId) return;
   incomingCallData = data;
   isVideoCall = data.isVideo || false;
   showCallModal(data.fromUserName, data.fromAvatarUrl, "incoming");
@@ -275,7 +314,6 @@ async function acceptCall() {
   if (!incomingCallData) return;
   stopRinging();
   const toUserId = normalizeUserId(incomingCallData.fromUserId);
-
   try {
     if (isVideoCall) {
       localStream = await navigator.mediaDevices.getUserMedia({
@@ -295,7 +333,6 @@ async function acceptCall() {
       return;
     }
   }
-
   activeCallUserId = toUserId;
   createPeerConnection(socket, toUserId);
   await peerConnection.setRemoteDescription(

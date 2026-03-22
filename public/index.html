@@ -1515,6 +1515,7 @@
             },
             14 * 60 * 1000,
           );
+          if (typeof resetCallEvents === "function") resetCallEvents();
           if (typeof setupCallSocketEvents === "function")
             setupCallSocketEvents(socket);
         });

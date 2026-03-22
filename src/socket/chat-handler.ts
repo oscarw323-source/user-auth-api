@@ -145,9 +145,7 @@ export const setupChatHandlers = (io: Server) => {
             data.fileType,
             data.fileName,
           );
-
           io.to(`direct_${chatId}`).emit("new_direct_message", newMessage);
-
           const toUserIdKey = normalizeId(data.toUserId);
           const recipientSocketId = userSockets.get(toUserIdKey);
           if (recipientSocketId && recipientSocketId !== socket.id) {
@@ -223,6 +221,8 @@ export const setupChatHandlers = (io: Server) => {
         isVideo?: boolean;
       }) => {
         const toUserIdKey = normalizeId(data.toUserId);
+
+        if (toUserIdKey === userIdKey) return;
         const recipientSocketId = userSockets.get(toUserIdKey);
         if (recipientSocketId) {
           io.to(recipientSocketId).emit("call_incoming", {
