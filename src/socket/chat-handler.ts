@@ -9,6 +9,11 @@ import { logger } from "../logger";
 
 const userSockets = new Map<string, string>();
 
+const normalizeId = (id: string): string => {
+  const stripped = String(id).replace(/^0+/, "");
+  return stripped || String(id);
+};
+
 export const setupChatHandlers = (io: Server) => {
   io.on("connection", async (socket: Socket) => {
     logger.info({ socketId: socket.id }, "Пользователь подключился");
@@ -62,7 +67,7 @@ export const setupChatHandlers = (io: Server) => {
       "Авторизован",
     );
 
-    const userIdKey = String(userId);
+    const userIdKey = normalizeId(String(userId));
     userSockets.set(userIdKey, socket.id);
 
     try {
@@ -143,35 +148,13 @@ export const setupChatHandlers = (io: Server) => {
 
           io.to(`direct_${chatId}`).emit("new_direct_message", newMessage);
 
-          const toUserIdKey =
-            String(data.toUserId).replace(/^0+/, "") || data.toUserId;
+          const toUserIdKey = normalizeId(data.toUserId);
           const recipientSocketId = userSockets.get(toUserIdKey);
-          logger.info(
-            {
-              toUserIdKey,
-              recipientSocketId,
-              allSockets: Object.fromEntries(userSockets),
-            },
-            "Debug send_direct",
-          );
           if (recipientSocketId && recipientSocketId !== socket.id) {
             const recipientSocket = io.sockets.sockets.get(recipientSocketId);
             const roomKey = `direct_${chatId}`;
-            const inRoom = recipientSocket?.rooms.has(roomKey);
-            logger.info(
-              {
-                roomKey,
-                inRoom,
-                rooms: recipientSocket ? Array.from(recipientSocket.rooms) : [],
-              },
-              "Debug recipient rooms",
-            );
-            if (recipientSocket && !inRoom) {
+            if (recipientSocket && !recipientSocket.rooms.has(roomKey)) {
               recipientSocket.emit("new_direct_message", newMessage);
-              logger.info(
-                { recipientSocketId },
-                "Sent notification to recipient",
-              );
             }
           }
         } catch (error) {
@@ -196,7 +179,7 @@ export const setupChatHandlers = (io: Server) => {
         const toUserId = new ObjectId(data.toUserId);
         await directChatService.clearMessages(userObjectId, toUserId);
         const chatId = directChatRepository.getChatId(userObjectId, toUserId);
-        io.to(`direct_${chatId}`).emit("direct_clered", { chatId });
+        io.to(`direct_${chatId}`).emit("direct_cleared", { chatId });
       } catch (error) {
         logger.error({ error }, "Ошибка clear_chat");
       }
@@ -229,6 +212,73 @@ export const setupChatHandlers = (io: Server) => {
         });
       } catch (error) {
         logger.error({ error }, "Ошибка mark_read");
+      }
+    });
+
+    socket.on(
+      "call_offer",
+      (data: {
+        toUserId: string;
+        offer: RTCSessionDescriptionInit;
+        isVideo?: boolean;
+      }) => {
+        const toUserIdKey = normalizeId(data.toUserId);
+        const recipientSocketId = userSockets.get(toUserIdKey);
+        if (recipientSocketId) {
+          io.to(recipientSocketId).emit("call_incoming", {
+            fromUserId: userIdKey,
+            fromUserName: user.userName,
+            fromAvatarUrl: user.avatarUrl,
+            offer: data.offer,
+            isVideo: data.isVideo || false,
+          });
+        }
+      },
+    );
+
+    socket.on(
+      "call_answer",
+      (data: { toUserId: string; answer: RTCSessionDescriptionInit }) => {
+        const toUserIdKey = normalizeId(data.toUserId);
+        const recipientSocketId = userSockets.get(toUserIdKey);
+        if (recipientSocketId) {
+          io.to(recipientSocketId).emit("call_answered", {
+            fromUserId: userIdKey,
+            answer: data.answer,
+          });
+        }
+      },
+    );
+
+    socket.on(
+      "ice_candidate",
+      (data: { toUserId: string; candidate: RTCIceCandidateInit }) => {
+        const toUserIdKey = normalizeId(data.toUserId);
+        const recipientSocketId = userSockets.get(toUserIdKey);
+        if (recipientSocketId) {
+          io.to(recipientSocketId).emit("ice_candidate", {
+            fromUserId: userIdKey,
+            candidate: data.candidate,
+          });
+        }
+      },
+    );
+
+    socket.on("call_reject", (data: { toUserId: string }) => {
+      const toUserIdKey = normalizeId(data.toUserId);
+      const recipientSocketId = userSockets.get(toUserIdKey);
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit("call_rejected", {
+          fromUserId: userIdKey,
+        });
+      }
+    });
+
+    socket.on("call_end", (data: { toUserId: string }) => {
+      const toUserIdKey = normalizeId(data.toUserId);
+      const recipientSocketId = userSockets.get(toUserIdKey);
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit("call_ended", { fromUserId: userIdKey });
       }
     });
 

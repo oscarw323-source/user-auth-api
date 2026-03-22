@@ -1,0 +1,176 @@
+.call-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  align-items: center;
+  justify-content: center;
+}
+
+.call-modal-card {
+  background: #0d1519;
+  border: 1px solid rgba(58, 90, 117, 0.3);
+  border-radius: 20px;
+  padding: 32px 28px;
+  text-align: center;
+  width: 320px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  animation: callCardIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+@keyframes callCardIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* АВАТАР */
+.call-modal-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin: 0 auto 14px;
+  display: block;
+  border: 2px solid rgba(58, 90, 117, 0.5);
+  object-fit: cover;
+}
+
+/* ВИДЕО */
+#localVideo {
+  position: absolute;
+  bottom: 100px;
+  right: 12px;
+  width: 90px;
+  height: 120px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 2px solid rgba(58, 90, 117, 0.5);
+  background: #000;
+  z-index: 10;
+}
+
+#remoteVideo {
+  width: 100%;
+  height: 200px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #000;
+  margin-bottom: 12px;
+  display: block;
+}
+
+/* ТЕКСТ */
+.call-modal-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ddeaf4;
+  margin-bottom: 6px;
+  font-family: "DM Sans", sans-serif;
+}
+
+.call-modal-status {
+  font-size: 13px;
+  color: #6a90a8;
+  margin-bottom: 20px;
+  font-family: "DM Sans", sans-serif;
+}
+
+.call-modal-status.calling {
+  animation: pulseText 1.5s infinite;
+}
+
+@keyframes pulseText {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.call-modal-timer {
+  font-size: 22px;
+  font-family: "DM Mono", monospace;
+  color: #ddeaf4;
+  margin-bottom: 24px;
+  letter-spacing: 1px;
+}
+
+/* КНОПКИ */
+.call-modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.call-action-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.call-action-btn.accept {
+  background: #22c55e;
+  box-shadow: 0 4px 20px rgba(34, 197, 94, 0.45);
+}
+.call-action-btn.accept:hover {
+  background: #16a34a;
+  transform: scale(1.08);
+}
+
+.call-action-btn.reject,
+.call-action-btn.end {
+  background: #ef4444;
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.45);
+}
+.call-action-btn.reject:hover,
+.call-action-btn.end:hover {
+  background: #dc2626;
+  transform: scale(1.08);
+}
+
+.call-action-btn.mute {
+  background: rgba(58, 90, 117, 0.4);
+  border: 1px solid rgba(58, 90, 117, 0.5);
+}
+.call-action-btn.mute:hover {
+  background: rgba(58, 90, 117, 0.65);
+  transform: scale(1.08);
+}
+.call-action-btn.mute.active {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.call-action-btn.camera {
+  background: rgba(58, 90, 117, 0.4);
+  border: 1px solid rgba(58, 90, 117, 0.5);
+}
+.call-action-btn.camera:hover {
+  background: rgba(58, 90, 117, 0.65);
+  transform: scale(1.08);
+}
+.call-action-btn.camera.active {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+}
